@@ -71,7 +71,8 @@ class Precomputer(object):
       Precomputer.xs, Precomputer.ys = np.meshgrid(
         np.arange(depth_im.shape[1]), np.arange(depth_im.shape[0]))
 
-    if depth_im.shape != Precomputer.depth_im_shape or not np.all(K==Precomputer.K):
+    if depth_im.shape != Precomputer.depth_im_shape \
+          or not np.all(K == Precomputer.K):
       Precomputer.K = K
       Precomputer.pre_Xs = (Precomputer.xs - K[0, 2]) / np.float64(K[0, 0])
       Precomputer.pre_Ys = (Precomputer.ys - K[1, 2]) / np.float64(K[1, 1])
@@ -91,7 +92,7 @@ def depth_im_to_dist_im_fast(depth_im, K):
     distance from the camera center to the 3D point [X, Y, Z] that projects to
     pixel [x, y], or 0 if there is no such 3D point.
   """
-  # only recomputed if depth_im.shape or K changes
+  # Only recomputed if depth_im.shape or K changes.
   pre_Xs, pre_Ys = Precomputer.precompute_lazy(depth_im, K)
 
   dist_im = np.sqrt(
