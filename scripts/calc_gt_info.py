@@ -123,8 +123,10 @@ for scene_id in dp_split['scene_ids']:
         visib_fract = 0.0
 
       # Bounding box of the object projection.
-      ys, xs = obj_mask_gt.nonzero()
-      bbox = misc.calc_2d_bbox(xs, ys, im_size)
+      bbox = [-1, -1, -1, -1]
+      if px_count_visib > 0:
+        ys, xs = obj_mask_gt.nonzero()
+        bbox = misc.calc_2d_bbox(xs, ys, im_size)
 
       # Bounding box of the visible surface part.
       bbox_visib = [-1, -1, -1, -1]

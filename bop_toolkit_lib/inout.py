@@ -119,18 +119,18 @@ def load_scene_camera(path):
   :return: Dictionary with the loaded content.
   """
   with open(path, 'r') as f:
-    info = yaml.load(f, Loader=yaml.CLoader)
-    for eid in info.keys():
-      if 'cam_K' in info[eid].keys():
-        info[eid]['cam_K'] =\
-          np.array(info[eid]['cam_K'], np.float).reshape((3, 3))
-      if 'cam_R_w2c' in info[eid].keys():
-        info[eid]['cam_R_w2c'] =\
-          np.array(info[eid]['cam_R_w2c'], np.float).reshape((3, 3))
-      if 'cam_t_w2c' in info[eid].keys():
-        info[eid]['cam_t_w2c'] =\
-          np.array(info[eid]['cam_t_w2c'], np.float).reshape((3, 1))
-  return info
+    scene_camera = yaml.load(f, Loader=yaml.CLoader)
+    for im_id in scene_camera.keys():
+      if 'cam_K' in scene_camera[im_id].keys():
+        scene_camera[im_id]['cam_K'] =\
+          np.array(scene_camera[im_id]['cam_K'], np.float).reshape((3, 3))
+      if 'cam_R_w2c' in scene_camera[im_id].keys():
+        scene_camera[im_id]['cam_R_w2c'] =\
+          np.array(scene_camera[im_id]['cam_R_w2c'], np.float).reshape((3, 3))
+      if 'cam_t_w2c' in scene_camera[im_id].keys():
+        scene_camera[im_id]['cam_t_w2c'] =\
+          np.array(scene_camera[im_id]['cam_t_w2c'], np.float).reshape((3, 1))
+  return scene_camera
 
 
 def save_scene_camera(path, scene_camera):
@@ -142,13 +142,13 @@ def save_scene_camera(path, scene_camera):
   :param scene_camera: Dictionary to save to the YAML file.
   """
   for im_id in sorted(scene_camera.keys()):
-    im_info = scene_camera[im_id]
-    if 'cam_K' in im_info.keys():
-      im_info['cam_K'] = im_info['cam_K'].flatten().tolist()
-    if 'cam_R_w2c' in im_info.keys():
-      im_info['cam_R_w2c'] = im_info['cam_R_w2c'].flatten().tolist()
-    if 'cam_t_w2c' in im_info.keys():
-      im_info['cam_t_w2c'] = im_info['cam_t_w2c'].flatten().tolist()
+    im_camera = scene_camera[im_id]
+    if 'cam_K' in im_camera.keys():
+      im_camera['cam_K'] = im_camera['cam_K'].flatten().tolist()
+    if 'cam_R_w2c' in im_camera.keys():
+      im_camera['cam_R_w2c'] = im_camera['cam_R_w2c'].flatten().tolist()
+    if 'cam_t_w2c' in im_camera.keys():
+      im_camera['cam_t_w2c'] = im_camera['cam_t_w2c'].flatten().tolist()
   with open(path, 'w') as f:
     yaml.dump(scene_camera, f, Dumper=yaml.CDumper, width=10000)
 

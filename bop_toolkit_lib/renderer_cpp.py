@@ -19,7 +19,7 @@ class RendererCpp(renderer.Renderer):
   def __init__(self, width, height):
     """See base class."""
     super(RendererCpp, self).__init__(width, height)
-    self.renderer = bop_renderer.PyRenderer()
+    self.renderer = bop_renderer.Renderer()
     self.renderer.init(width, height)
 
   def set_light_cam_pos(self, light_cam_pos):
