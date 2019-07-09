@@ -35,18 +35,14 @@ args = parser.parse_args()
 
 p['result_filenames'] = args.result_filenames.split(',')
 
-# Checking.
-# ------------------------------------------------------------------------------
-check_passed = True
-for result_filename in p['result_filenames']:
-  try:
-    inout.load_bop_results(os.path.join(config.results_path, result_filename))
-  except Exception as e:
-    check_passed = False
-    misc.log('ERROR when loading file {}:\n{}'.format(
-      result_filename, e))
 
-if check_passed:
-  misc.log('Check passed.')
-else:
-  misc.log('Check failed.')
+if __name__ == '__main__':
+
+  for result_filename in p['result_filenames']:
+    result_path = os.path.join(config.results_path, result_filename)
+    check_passed = inout.check_bop_results(result_path, version='bop19')
+
+    if check_passed:
+      misc.log('Check passed.')
+    else:
+      misc.log('Check failed.')

@@ -193,16 +193,17 @@ def save_scene_gt(path, scene_gt):
     yaml.dump(scene_gt, f, Dumper=yaml.CDumper, width=10000)
 
 
-def load_bop_results(path, version='bop_challenge_2019'):
+def load_bop_results(path, version='bop19'):
   """Loads 6D object pose estimates from a file.
 
   :param path: Path to a file with pose estimates.
+  :param version: Version of the results.
   :return: List of loaded poses.
   """
   results = []
 
   # See docs/bop_challenge_2019.md for details.
-  if version == 'bop_challenge_2019':
+  if version == 'bop19':
     header = 'scene_id,im_id,obj_id,score,R,t,time'
     with open(path, 'r') as f:
       line_id = 0
@@ -235,15 +236,15 @@ def load_bop_results(path, version='bop_challenge_2019'):
   return results
 
 
-def save_bop_results(path, results, version='bop_challenge_2019'):
+def save_bop_results(path, results, version='bop19'):
   """Saves 6D object pose estimates to a YAML file.
 
   :param path: Path to the output YAML file.
-  :param res: Dictionary with pose estimates.
-  :param run_time: Time which the evaluated method took to make the estimates.
+  :param results: Dictionary with pose estimates.
+  :param version: Version of the results.
   """
   # See docs/bop_challenge_2019.md for details.
-  if version == 'bop_challenge_2019':
+  if version == 'bop19':
     lines = ['scene_id,im_id,obj_id,score,R,t,time']
     for res in results:
       if 'time' in res:
@@ -265,6 +266,22 @@ def save_bop_results(path, results, version='bop_challenge_2019'):
 
   else:
     raise ValueError('Unknown version of BOP results.')
+
+
+def check_bop_results(path, version='bop19'):
+  """Checks if the format of BOP results is correct.
+
+    :param result_filenames: Path to a file with pose estimates.
+    :param version: Version of the results.
+    :return: True if the format is correct, False if it is not correct.
+    """
+  check_passed = True
+  try:
+    load_bop_results(path, version)
+  except Exception as e:
+    check_passed = False
+    misc.log('ERROR when loading file {}:\n{}'.format(path, e))
+  return check_passed
 
 
 def save_errors(path, errors):
