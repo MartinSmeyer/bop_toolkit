@@ -47,11 +47,11 @@ def vsd(R_est, t_est, R_gt, t_gt, depth_test, K, delta, tau, renderer, obj_id,
 
   # Visibility mask of the model in the ground-truth pose.
   visib_gt = visibility.estimate_visib_mask_gt(
-    dist_test, dist_gt, delta)
+    dist_test, dist_gt, delta, visib_mode='bop19')
 
   # Visibility mask of the model in the estimated pose.
   visib_est = visibility.estimate_visib_mask_est(
-    dist_test, dist_est, visib_gt, delta)
+    dist_test, dist_est, visib_gt, delta, visib_mode='bop19')
 
   # Intersection and union of the visibility masks.
   visib_inter = np.logical_and(visib_gt, visib_est)
