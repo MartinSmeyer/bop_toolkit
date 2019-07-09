@@ -110,7 +110,8 @@ for scene_id in dp_split['scene_ids']:
       dist_im = misc.depth_im_to_dist_im(depth, K)
 
       # Estimation of the visibility mask.
-      visib_gt = visibility.estimate_visib_mask_gt(dist_im, dist_gt, p['delta'])
+      visib_gt = visibility.estimate_visib_mask_gt(
+        dist_im, dist_gt, p['delta'], visib_mode='bop19')
 
       # Visible surface fraction.
       obj_mask_gt = dist_gt > 0

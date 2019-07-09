@@ -27,7 +27,7 @@ p = {
   'dataset_split_type': None,
 
   # Tolerance used in the visibility test [mm].
-  'delta': 15,
+  'delta': 15,  # 5 for ITODD, 15 for the other datasets.
 
   # Type of the renderer.
   'renderer_type': 'python',  # Options: 'cpp', 'python'.
