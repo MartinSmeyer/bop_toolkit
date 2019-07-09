@@ -40,9 +40,7 @@ if __name__ == '__main__':
 
   for result_filename in p['result_filenames']:
     result_path = os.path.join(config.results_path, result_filename)
-    check_passed = inout.check_bop_results(result_path, version='bop19')
+    check_passed, check_msg = inout.check_bop_results(
+      result_path, version='bop19')
 
-    if check_passed:
-      misc.log('Check passed.')
-    else:
-      misc.log('Check failed.')
+    misc.log('Check msg: {}'.format(check_msg))

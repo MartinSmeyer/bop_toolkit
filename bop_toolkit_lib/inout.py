@@ -122,13 +122,13 @@ def load_scene_camera(path):
     scene_camera = yaml.load(f, Loader=yaml.CLoader)
     for im_id in scene_camera.keys():
       if 'cam_K' in scene_camera[im_id].keys():
-        scene_camera[im_id]['cam_K'] =\
+        scene_camera[im_id]['cam_K'] = \
           np.array(scene_camera[im_id]['cam_K'], np.float).reshape((3, 3))
       if 'cam_R_w2c' in scene_camera[im_id].keys():
-        scene_camera[im_id]['cam_R_w2c'] =\
+        scene_camera[im_id]['cam_R_w2c'] = \
           np.array(scene_camera[im_id]['cam_R_w2c'], np.float).reshape((3, 3))
       if 'cam_t_w2c' in scene_camera[im_id].keys():
-        scene_camera[im_id]['cam_t_w2c'] =\
+        scene_camera[im_id]['cam_t_w2c'] = \
           np.array(scene_camera[im_id]['cam_t_w2c'], np.float).reshape((3, 1))
   return scene_camera
 
@@ -271,17 +271,37 @@ def save_bop_results(path, results, version='bop19'):
 def check_bop_results(path, version='bop19'):
   """Checks if the format of BOP results is correct.
 
-    :param result_filenames: Path to a file with pose estimates.
-    :param version: Version of the results.
-    :return: True if the format is correct, False if it is not correct.
-    """
+  :param result_filenames: Path to a file with pose estimates.
+  :param version: Version of the results.
+  :return: True if the format is correct, False if it is not correct.
+  """
   check_passed = True
+  check_msg = 'OK'
   try:
-    load_bop_results(path, version)
+    results = load_bop_results(path, version)
+
+    if version == 'bop19':
+      # Check if the time for all estimates from the same image are the same.
+      times = {}
+      for result in results:
+        result_key = '{:06d}_{:06d}'.format(result['scene_id'], result['im_id'])
+        if result_key in times:
+          if abs(times[result_key] - result['time']) > 0.001:
+            check_passed = False
+            check_msg = \
+              'The running time for scene {} and image {} is not the same for' \
+              ' all estimates'.format(result['scene_id'], result['im_id'])
+            misc.log(check_msg)
+            break
+        else:
+          times[result_key] = result['time']
+
   except Exception as e:
     check_passed = False
-    misc.log('ERROR when loading file {}:\n{}'.format(path, e))
-  return check_passed
+    check_msg = 'ERROR when loading file {}:\n{}'.format(path, e)
+    misc.log(check_msg)
+
+  return check_passed, check_msg
 
 
 def save_errors(path, errors):
@@ -579,9 +599,9 @@ def save_ply2(path, pts, pts_colors=None, pts_normals=None, faces=None,
 
   f.write(
     'element vertex ' + str(valid_pts_count) + '\n'
-    'property float x\n'
-    'property float y\n'
-    'property float z\n'
+                                               'property float x\n'
+                                               'property float y\n'
+                                               'property float z\n'
   )
   if pts_normals is not None:
     f.write(
@@ -603,7 +623,7 @@ def save_ply2(path, pts, pts_colors=None, pts_normals=None, faces=None,
   if faces is not None:
     f.write(
       'element face ' + str(len(faces)) + '\n'
-      'property list uchar int vertex_indices\n'
+                                          'property list uchar int vertex_indices\n'
     )
   if texture_uv_face is not None:
     f.write(
