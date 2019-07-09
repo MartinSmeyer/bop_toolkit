@@ -28,13 +28,17 @@ def _estimate_visib_mask(d_test, d_model, delta, visib_mode='bop19'):
 
   if visib_mode == 'bop18':
     mask_valid = np.logical_and(d_test > 0, d_model > 0)
+    d_diff = d_model.astype(np.float32) - d_test.astype(np.float32)
+    visib_mask = np.logical_and(d_diff <= delta, mask_valid)
+
   elif visib_mode == 'bop19':
-    mask_valid = d_model > 0
+    mask_model_valid = d_model > 0
+    d_diff = d_model.astype(np.float32) - d_test.astype(np.float32)
+    visib_mask = np.logical_and(
+      np.logical_or(d_diff <= delta, d_test == 0), mask_model_valid)
+
   else:
     raise ValueError('Unknown visibility mode.')
-
-  d_diff = d_model.astype(np.float32) - d_test.astype(np.float32)
-  visib_mask = np.logical_and(d_diff <= delta, mask_valid)
 
   return visib_mask
 
