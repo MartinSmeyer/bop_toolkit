@@ -278,27 +278,23 @@ def get_error_signature(error_type, n_top, **kwargs):
   """
   error_sign = 'error=' + error_type + '_ntop=' + str(n_top)
   if error_type == 'vsd':
-    vsd_delta_str = str(int(kwargs['vsd_delta']))
     if kwargs['vsd_tau'] == float('inf'):
       vsd_tau_str = 'inf'
     else:
-      vsd_tau_str = str(int(kwargs['vsd_tau']))
-    error_sign += '_delta={}_tau={}'.format(vsd_delta_str, vsd_tau_str)
+      vsd_tau_str = '{:.3f}'.format(kwargs['vsd_tau'])
+    error_sign += '_delta={:.3f}_tau={}'.format(
+      kwargs['vsd_delta'], vsd_tau_str)
   return error_sign
 
 
-def get_score_signature(error_type, visib_gt_min, **kwargs):
+def get_score_signature(correct_th, visib_gt_min):
   """Generates a signature for a performance score.
 
-  :param error_type: Type of error.
   :param visib_gt_min: Minimum visible surface fraction of a valid GT pose.
   :return: Generated signature.
   """
-  if error_type in ['ad', 'add', 'adi']:
-    eval_sign = 'thf=' + '-'.join(map(str, kwargs['correct_th_fact']))
-  else:
-    eval_sign = 'th=' + '-'.join(map(str, kwargs['correct_th']))
-  eval_sign += '_min-visib=' + str(visib_gt_min)
+  eval_sign = 'th=' + '-'.join(['{:.3f}'.format(t) for t in correct_th])
+  eval_sign += '_min-visib={:.3f}'.format(visib_gt_min)
   return eval_sign
 
 

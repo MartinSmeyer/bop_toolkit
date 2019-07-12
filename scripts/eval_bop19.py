@@ -7,6 +7,7 @@ import os
 import time
 import argparse
 import subprocess
+import numpy as np
 
 from bop_toolkit_lib import config
 from bop_toolkit_lib import inout
@@ -21,20 +22,31 @@ p = {
     {
       'n_top': -1,
       'type': 'vsd',
-      'vsd_delta': 15,
-      'vsd_tau': 20,
-      'correct_th': [[0.3]]
+      'vsd_deltas': {
+        'hb': 15,
+        'icbin': 15,
+        'icmi': 15,
+        'itodd': 5,
+        'lm': 15,
+        'lmo': 15,
+        'ruapc': 15,
+        'tless': 15,
+        'tudl': 15,
+        'tyol': 15,
+      },
+      'vsd_taus': list(np.arange(0.05, 0.51, 0.05)),
+      'correct_th': [[th] for th in np.arange(0.05, 0.51, 0.05)]
     },
-    {
-      'n_top': -1,
-      'type': 'cus',
-      'correct_th': [[0.3]]
-    },
-    {
-      'n_top': -1,
-      'type': 'ad',
-      'correct_th': [[0.1]]
-    },
+    # {
+    #   'n_top': -1,
+    #   'type': 'mssd',
+    #   'correct_th': [[th] for th in np.arange(0.05, 0.51, 0.05)]
+    # },
+    # {
+    #   'n_top': -1,
+    #   'type': 'mspd',
+    #   'correct_th': [[th] for th in np.arange(2.5, 26, 2.5)]
+    # },
   ],
 
   # Minimum visible surface fraction of a valid GT pose.
@@ -48,7 +60,9 @@ p = {
   # description of the format. Example results can be found at:
   # http://ptak.felk.cvut.cz/6DB/public/bop_sample_results/bop_challenge_2019/
   'result_filenames': [
-    '/path/to/csv/with/results',
+    # '/path/to/csv/with/results',
+    # 'hodan-iros15_icbin-test.csv',
+    'hodan-iros15_tless-test-primesense.csv',
   ],
 
   # File with a list of estimation targets to consider. The file is assumed to
@@ -98,64 +112,75 @@ for result_filename in p['result_filenames']:
       '--skip_missing=1',
     ]
     if error['type'] == 'vsd':
+      vsd_deltas_str = \
+        ','.join(['{}:{}'.format(k, v) for k, v in error['vsd_deltas'].items()])
       calc_errors_cmd += [
-        '--vsd_delta={}'.format(error['vsd_delta']),
-        '--vsd_tau={}'.format(error['vsd_tau'])
+        '--vsd_deltas={}'.format(vsd_deltas_str),
+        '--vsd_taus={}'.format(','.join(map(str, error['vsd_taus'])))
       ]
 
     misc.log('Running: ' + ' '.join(calc_errors_cmd))
     if subprocess.call(calc_errors_cmd) != 0:
       raise RuntimeError('Calculation of VSD failed.')
 
-    # Path (relative to config.eval_path) to folder with calculated pose errors.
-    if error['type'] == 'vsd':
-      error_sign = misc.get_error_signature(
-        error['type'], error['n_top'], vsd_delta=error['vsd_delta'],
-        vsd_tau=error['vsd_tau'])
-    else:
-      error_sign = misc.get_error_signature(
-        error['type'], error['n_top'])
-
+    # Name of the result and the dataset.
     result_name = os.path.splitext(os.path.basename(result_filename))[0]
-    error_dir_path = os.path.join(result_name, error_sign)
+    dataset = str(result_name.split('_')[1].split('-')[0])
+
+    # Paths (rel. to config.eval_path) to folders with calculated pose errors.
+    # For VSD, there is one path for each setting of tau. For the other pose
+    # error functions, there is only one path.
+    error_dir_paths = {}
+    if error['type'] == 'vsd':
+      for vsd_tau in error['vsd_taus']:
+        error_sign = misc.get_error_signature(
+          error['type'], error['n_top'], vsd_delta=error['vsd_deltas'][dataset],
+          vsd_tau=vsd_tau)
+        error_dir_paths[error_sign] = os.path.join(result_name, error_sign)
+    else:
+      error_sign = misc.get_error_signature(error['type'], p['n_top'])
+      error_dir_paths[error_sign] = os.path.join(result_name, error_sign)
+
+    # Recall scores for all settings of the threshold of correctness (and also
+    # of the misalignment tolerance tau in the case of VSD).
+    recalls = []
 
     # Calculate performance scores.
-    for correct_th in error['correct_th']:
+    for error_sign, error_dir_path in error_dir_paths.items():
+      for correct_th in error['correct_th']:
 
-      calc_scores_cmd = [
-        'python',
-        os.path.join('scripts', 'eval_calc_scores.py'),
-        '--error_dir_paths={}'.format(error_dir_path),
-        '--targets_filename={}'.format(p['targets_filename']),
-        '--visib_gt_min={}'.format(p['visib_gt_min'])
-      ]
+        calc_scores_cmd = [
+          'python',
+          os.path.join('scripts', 'eval_calc_scores.py'),
+          '--error_dir_paths={}'.format(error_dir_path),
+          '--targets_filename={}'.format(p['targets_filename']),
+          '--visib_gt_min={}'.format(p['visib_gt_min'])
+        ]
 
-      if error['type'] in ['ad', 'add', 'adi']:
-        calc_scores_cmd += ['--correct_th_fact_{}={}'.format(
-          error['type'], ','.join(map(str, correct_th)))]
-      else:
         calc_scores_cmd += ['--correct_th_{}={}'.format(
           error['type'], ','.join(map(str, correct_th)))]
 
-      misc.log('Running: ' + ' '.join(calc_scores_cmd))
-      if subprocess.call(calc_scores_cmd) != 0:
-        raise RuntimeError('Calculation of scores failed.')
+        misc.log('Running: ' + ' '.join(calc_scores_cmd))
+        if subprocess.call(calc_scores_cmd) != 0:
+          raise RuntimeError('Calculation of scores failed.')
 
-      # Path to file with calculated scores.
-      if error['type'] in ['ad', 'add', 'adi']:
-        score_sign = misc.get_score_signature(
-          error['type'], p['visib_gt_min'], correct_th_fact=correct_th)
-      else:
-        score_sign = misc.get_score_signature(
-          error['type'], p['visib_gt_min'], correct_th=correct_th)
+        # Path to file with calculated scores.
+        score_sign = misc.get_score_signature(correct_th, p['visib_gt_min'])
 
-      scores_filename = 'scores_{}.yml'.format(score_sign)
-      scores_path = os.path.join(
-        config.eval_path, result_name, error_sign, scores_filename)
+        scores_filename = 'scores_{}.yml'.format(score_sign)
+        scores_path = os.path.join(
+          config.eval_path, result_name, error_sign, scores_filename)
 
-      # Load the scores.
-      misc.log('Loading calculated scores from: {}'.format(scores_path))
-      scores = inout.load_yaml(scores_path)
+        # Load the scores.
+        misc.log('Loading calculated scores from: {}'.format(scores_path))
+        scores = inout.load_json(scores_path)
+        recalls.append(scores['total_recall'])
+
+    # Area under the recall surface.
+    aurs = np.mean(recalls)
+
+    misc.log('Recall scores: {}'.format(' '.join(map(str, recalls))))
+    misc.log('Area under the recall surface: {}'.format(aurs))
 
   time_total = time.time() - time_start
   misc.log('Evaluation of {} took {}s.'.format(result_filename, time_total))

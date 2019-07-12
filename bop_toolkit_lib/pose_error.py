@@ -13,8 +13,9 @@ from scipy import spatial
 from bop_toolkit_lib import misc
 from bop_toolkit_lib import visibility
 
-def vsd(R_est, t_est, R_gt, t_gt, depth_test, K, delta, tau, renderer, obj_id,
-        cost_type='step'):
+
+def vsd(R_est, t_est, R_gt, t_gt, depth_test, K, delta, taus,
+        normalized_by_diameter, diameter, renderer, obj_id, cost_type='step'):
   """Visible Surface Discrepancy -- by Hodan, Michel et al. (ECCV 2018).
 
   :param R_est: 3x3 ndarray with the estimated rotation matrix.
@@ -24,14 +25,17 @@ def vsd(R_est, t_est, R_gt, t_gt, depth_test, K, delta, tau, renderer, obj_id,
   :param depth_test: hxw ndarray with the test depth image.
   :param K: 3x3 ndarray with a camera matrix.
   :param delta: Tolerance used for estimation of the visibility masks.
-  :param tau: Misalignment tolerance.
+  :param taus: A list of misalignment tolerance values.
+  :param normalized_by_diameter: Whether to normalize the pixel-wise distances
+      by the object diameter.
+  :param diameter: Object diameter.
   :param renderer: Instance of the Renderer class (see renderer.py).
   :param obj_id: Object identifier.
   :param cost_type: Type of the pixel-wise matching cost:
       'tlinear' - Used in the original definition of VSD in:
           Hodan et al., On Evaluation of 6D Object Pose Estimation, ECCVW'16
       'step' - Used for SIXD Challenge 2017 onwards.
-  :return: The calculated error.
+  :return: List of calculated errors (one for each misalignment tolerance).
   """
   # Render depth images of the model in the estimated and the ground-truth pose.
   fx, fy, cx, cy = K[0, 0], K[1, 1], K[0, 2], K[1, 2]
@@ -57,24 +61,36 @@ def vsd(R_est, t_est, R_gt, t_gt, depth_test, K, delta, tau, renderer, obj_id,
   visib_inter = np.logical_and(visib_gt, visib_est)
   visib_union = np.logical_or(visib_gt, visib_est)
 
-  # Pixel-wise matching cost.
-  costs = np.abs(dist_gt[visib_inter] - dist_est[visib_inter])
-  if cost_type == 'step':
-    costs = costs >= tau
-  elif cost_type == 'tlinear':  # Truncated linear function.
-    costs *= (1.0 / tau)
-    costs[costs > 1.0] = 1.0
-  else:
-    raise ValueError('Unknown pixel matching cost.')
-
-  # Visible Surface Discrepancy.
   visib_union_count = visib_union.sum()
   visib_comp_count = visib_union_count - visib_inter.sum()
-  if visib_union_count > 0:
-    e = (costs.sum() + visib_comp_count) / float(visib_union_count)
+
+  # Pixel-wise distances.
+  dists = np.abs(dist_gt[visib_inter] - dist_est[visib_inter])
+
+  # Normalization of pixel-wise distances by object diameter.
+  if normalized_by_diameter:
+    dists /= diameter
+
+  # Calculate VSD for each provided value of the misalignment tolerance.
+  if visib_union_count == 0:
+    errors = [1.0] * len(taus)
   else:
-    e = 1.0
-  return e
+    errors = []
+    for tau in taus:
+
+      # Pixel-wise matching cost.
+      if cost_type == 'step':
+        costs = dists >= tau
+      elif cost_type == 'tlinear':  # Truncated linear function.
+        costs = dists / tau
+        costs[costs > 1.0] = 1.0
+      else:
+        raise ValueError('Unknown pixel matching cost.')
+
+      e = (np.sum(costs) + visib_comp_count) / float(visib_union_count)
+      errors.append(e)
+
+  return errors
 
 
 def add(R_est, t_est, R_gt, t_gt, pts):

@@ -165,8 +165,9 @@ as in OpenCV with the camera looking along the *Z* axis. Camera matrix *K* is
 provided with the test images and might be different for each image.
 
 **List of Object Instances:** The list of object instances for which the pose is
-to be estimated can be found in files *test_targets_bop19.yml* provided with the
-datasets. The list includes instances which are visible from at least 10% [1].
+to be estimated can be found in files *test_targets_bop19.json* provided with
+the datasets. The list includes instances which are visible from at least 10%
+[1].
 
 **Publication:** If you want your results to be included in a publication about
 the challenge, a documentation of the method, including the tech specs of the

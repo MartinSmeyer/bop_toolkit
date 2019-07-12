@@ -169,4 +169,4 @@ for scene_id in dp_split['scene_ids']:
   # Save the info for the current scene.
   scene_gt_info_path = dp_split['scene_gt_info_tpath'].format(scene_id=scene_id)
   misc.ensure_dir(os.path.dirname(scene_gt_info_path))
-  inout.save_yaml(scene_gt_info_path, scene_gt_info)
+  inout.save_json(scene_gt_info_path, scene_gt_info)

@@ -47,7 +47,7 @@ for scene_id in scene_ids:
     dp_split['scene_gt_tpath'].format(scene_id=scene_id))
 
   # Load info about the GT poses.
-  scene_gt_info = inout.load_yaml(
+  scene_gt_info = inout.load_json(
     dp_split['scene_gt_info_tpath'].format(scene_id=scene_id))
 
   ims_count += len(scene_gt)
