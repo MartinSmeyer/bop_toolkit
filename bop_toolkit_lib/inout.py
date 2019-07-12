@@ -70,12 +70,15 @@ def load_json(path, keys_to_int=False):
   :param path: Path to the JSON file.
   :return: Content of the loaded JSON file.
   """
-  with open(path, 'r') as f:
-    content = json.load(f)
-
   # Keys to integers.
-  if keys_to_int:
-    content = {int(k): v for k, v in content.items()}
+  def convert_keys_to_int(x):
+    return {int(k) if k.lstrip('-').isdigit() else k: v for k, v in x.items()}
+
+  with open(path, 'r') as f:
+    if keys_to_int:
+      content = json.load(f, object_hook=lambda x: convert_keys_to_int(x))
+    else:
+      content = json.load(f)
 
   return content
 
