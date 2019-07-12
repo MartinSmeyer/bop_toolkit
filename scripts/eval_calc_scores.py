@@ -184,7 +184,8 @@ for error_dir_path in p['error_dir_paths']:
 
     # Load info about the GT poses (e.g. visibility) for the current scene.
     scene_gt_info = inout.load_json(
-      dp_split['scene_gt_info_tpath'].format(scene_id=scene_id), keys_to_int=True)
+      dp_split['scene_gt_info_tpath'].format(scene_id=scene_id),
+      keys_to_int=True)
 
     # Keep GT poses only for the selected targets.
     scene_gt_curr = {}
@@ -204,7 +205,7 @@ for error_dir_path in p['error_dir_paths']:
     # Load pre-calculated errors of the pose estimates w.r.t. the GT poses.
     scene_errs_path = p['error_tpath'].format(
       error_dir_path=error_dir_path, scene_id=scene_id)
-    scene_errs = inout.load_json(scene_errs_path)
+    scene_errs = inout.load_json(scene_errs_path, keys_to_int=True)
 
     # Normalize the errors by the object diameter.
     if err_type in p['normalized_by_diameter']:
