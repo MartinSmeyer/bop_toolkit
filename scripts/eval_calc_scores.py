@@ -182,41 +182,41 @@ for error_dir_path in p['error_dir_paths']:
     scene_gt = inout.load_scene_gt(
       dp_split['scene_gt_tpath'].format(scene_id=scene_id))
 
-    # # Load info about the GT poses (e.g. visibility) for the current scene.
-    # scene_gt_info = inout.load_json(
-    #   dp_split['scene_gt_info_tpath'].format(scene_id=scene_id), keys_to_int=True)
-    #
-    # # Keep GT poses only for the selected targets.
-    # scene_gt_curr = {}
-    # scene_gt_info_curr = {}
-    # scene_gt_valid = {}
-    # for im_id, im_targets in scene_targets.items():
-    #   scene_gt_curr[im_id] = scene_gt[im_id]
-    #
-    #   # Determine which GT poses are valid.
-    #   scene_gt_valid[im_id] = []
-    #   im_gt_info = scene_gt_info[im_id]
-    #   for gt_id, gt in enumerate(scene_gt[im_id]):
-    #     is_target = gt['obj_id'] in im_targets.keys()
-    #     is_visib = im_gt_info[gt_id]['visib_fract'] >= p['visib_gt_min']
-    #     scene_gt_valid[im_id].append(is_target and is_visib)
-    #
-    # # Load pre-calculated errors of the pose estimates w.r.t. the GT poses.
-    # scene_errs_path = p['error_tpath'].format(
-    #   error_dir_path=error_dir_path, scene_id=scene_id)
-    # scene_errs = inout.load_json(scene_errs_path)
-    #
-    # # Normalize the errors by the object diameter.
-    # if err_type in p['normalized_by_diameter']:
-    #   for err in scene_errs:
-    #     diameter = float(models_info[err['obj_id']]['diameter'])
-    #     for gt_id in err['errors'].keys():
-    #       err['errors'][gt_id] = [e / diameter for e in err['errors'][gt_id]]
-    #
-    # # Match the estimated poses to the ground-truth poses.
-    # matches += pose_matching.match_poses_scene(
-    #   scene_id, scene_gt_curr, scene_gt_valid, scene_errs,
-    #   p['correct_th'][err_type], n_top)
+    # Load info about the GT poses (e.g. visibility) for the current scene.
+    scene_gt_info = inout.load_json(
+      dp_split['scene_gt_info_tpath'].format(scene_id=scene_id), keys_to_int=True)
+
+    # Keep GT poses only for the selected targets.
+    scene_gt_curr = {}
+    scene_gt_info_curr = {}
+    scene_gt_valid = {}
+    for im_id, im_targets in scene_targets.items():
+      scene_gt_curr[im_id] = scene_gt[im_id]
+
+      # Determine which GT poses are valid.
+      scene_gt_valid[im_id] = []
+      im_gt_info = scene_gt_info[im_id]
+      for gt_id, gt in enumerate(scene_gt[im_id]):
+        is_target = gt['obj_id'] in im_targets.keys()
+        is_visib = im_gt_info[gt_id]['visib_fract'] >= p['visib_gt_min']
+        scene_gt_valid[im_id].append(is_target and is_visib)
+
+    # Load pre-calculated errors of the pose estimates w.r.t. the GT poses.
+    scene_errs_path = p['error_tpath'].format(
+      error_dir_path=error_dir_path, scene_id=scene_id)
+    scene_errs = inout.load_json(scene_errs_path)
+
+    # Normalize the errors by the object diameter.
+    if err_type in p['normalized_by_diameter']:
+      for err in scene_errs:
+        diameter = float(models_info[err['obj_id']]['diameter'])
+        for gt_id in err['errors'].keys():
+          err['errors'][gt_id] = [e / diameter for e in err['errors'][gt_id]]
+
+    # Match the estimated poses to the ground-truth poses.
+    matches += pose_matching.match_poses_scene(
+      scene_id, scene_gt_curr, scene_gt_valid, scene_errs,
+      p['correct_th'][err_type], n_top)
 
   # Calculate the performance scores.
   # ----------------------------------------------------------------------------
