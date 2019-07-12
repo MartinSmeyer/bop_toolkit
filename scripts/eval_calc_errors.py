@@ -152,7 +152,8 @@ for result_filename in p['result_filenames']:
   # Load models info.
   models_info = None
   if p['error_type'] in ['ad', 'add', 'adi', 'vsd', 'cus']:
-    models_info = inout.load_json(dp_model['models_info_path'])
+    models_info = inout.load_json(
+      dp_model['models_info_path'], keys_to_int=True)
 
   # Initialize a renderer.
   ren = None

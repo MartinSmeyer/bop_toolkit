@@ -158,7 +158,7 @@ for error_dir_path in p['error_dir_paths']:
     p['datasets_path'], dataset, model_type)
 
   # Load info about the object models.
-  models_info = inout.load_json(dp_model['models_info_path'])
+  models_info = inout.load_json(dp_model['models_info_path'], keys_to_int=True)
 
   # Load the estimation targets to consider.
   targets = inout.load_json(
@@ -184,7 +184,7 @@ for error_dir_path in p['error_dir_paths']:
 
     # # Load info about the GT poses (e.g. visibility) for the current scene.
     # scene_gt_info = inout.load_json(
-    #   dp_split['scene_gt_info_tpath'].format(scene_id=scene_id))
+    #   dp_split['scene_gt_info_tpath'].format(scene_id=scene_id), keys_to_int=True)
     #
     # # Keep GT poses only for the selected targets.
     # scene_gt_curr = {}
