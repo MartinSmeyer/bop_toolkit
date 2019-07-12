@@ -75,9 +75,9 @@ out_rgb_tpath =\
 out_depth_tpath =\
   os.path.join('{out_path}', '{obj_id:06d}', 'depth', '{im_id:06d}.png')
 out_scene_camera_tpath =\
-  os.path.join('{out_path}', '{obj_id:06d}', 'scene_camera.yml')
+  os.path.join('{out_path}', '{obj_id:06d}', 'scene_camera.json')
 out_scene_gt_tpath =\
-  os.path.join('{out_path}', '{obj_id:06d}', 'scene_gt.yml')
+  os.path.join('{out_path}', '{obj_id:06d}', 'scene_gt.json')
 out_views_vis_tpath =\
   os.path.join('{out_path}', '{obj_id:06d}', 'views_radius={radius}.ply')
 ################################################################################

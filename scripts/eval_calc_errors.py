@@ -64,12 +64,12 @@ p = {
 
   # File with a list of estimation targets to consider. The file is assumed to
   # be stored in the dataset folder.
-  'targets_filename': 'test_targets_bop19.yml',
+  'targets_filename': 'test_targets_bop19.json',
 
   # Template of path to the output file with calculated errors.
   'out_errors_tpath': os.path.join(
     config.eval_path, '{result_name}', '{error_sign}',
-    'errors_{scene_id:06d}.yml')
+    'errors_{scene_id:06d}.json')
 }
 ################################################################################
 

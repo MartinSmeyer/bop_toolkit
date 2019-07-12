@@ -65,18 +65,18 @@ p = {
 
   # File with a list of estimation targets to consider. The file is assumed to
   # be stored in the dataset folder.
-  'targets_filename': 'test_targets_bop19.yml',
+  'targets_filename': 'test_targets_bop19.json',
 
   # Template of path to the input file with calculated errors.
   'error_tpath': os.path.join(
-    config.eval_path, '{error_dir_path}', 'errors_{scene_id:06d}.yml'),
+    config.eval_path, '{error_dir_path}', 'errors_{scene_id:06d}.json'),
 
   # Template of path to the output file with established matches and calculated
   # scores.
   'out_matches_tpath': os.path.join(
-    config.eval_path, '{error_dir_path}', 'matches_{score_sign}.yml'),
+    config.eval_path, '{error_dir_path}', 'matches_{score_sign}.json'),
   'out_scores_tpath': os.path.join(
-    config.eval_path, '{error_dir_path}', 'scores_{score_sign}.yml'),
+    config.eval_path, '{error_dir_path}', 'scores_{score_sign}.json'),
 }
 ################################################################################
 

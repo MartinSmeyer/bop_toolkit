@@ -61,13 +61,13 @@ p = {
   # http://ptak.felk.cvut.cz/6DB/public/bop_sample_results/bop_challenge_2019/
   'result_filenames': [
     # '/path/to/csv/with/results',
-    # 'hodan-iros15_icbin-test.csv',
-    'hodan-iros15_tless-test-primesense.csv',
+    'hodan-iros15_icbin-test.csv',
+    # 'hodan-iros15_tless-test-primesense.csv',
   ],
 
   # File with a list of estimation targets to consider. The file is assumed to
   # be stored in the dataset folder.
-  'targets_filename': 'test_targets_bop19.yml',
+  'targets_filename': 'test_targets_bop19.json',
 }
 ################################################################################
 
@@ -167,7 +167,7 @@ for result_filename in p['result_filenames']:
         # Path to file with calculated scores.
         score_sign = misc.get_score_signature(correct_th, p['visib_gt_min'])
 
-        scores_filename = 'scores_{}.yml'.format(score_sign)
+        scores_filename = 'scores_{}.json'.format(score_sign)
         scores_path = os.path.join(
           config.eval_path, result_name, error_sign, scores_filename)
 
