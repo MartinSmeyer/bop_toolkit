@@ -3,20 +3,21 @@
 
 """Configuration of the BOP Toolkit."""
 
-datasets_path =\
-  r'C:\Users\tomho\th_data\cmp\projects\bop\datasets\bop'
 
-output_path =\
-  r'C:\Users\tomho\th_data\cmp\projects\bop\datasets\output'
+# Folder with the BOP datasets.
+datasets_path = r'/path/to/bop/datasets'
 
-results_path =\
-  r'C:\Users\tomho\th_data\cmp\projects\bop\bop_results\bop_challenge_2019'
+# Folder for outputs (e.g. visualizations).
+output_path = r'/path/to/output/folder'
 
-eval_path =\
-  r'C:\Users\tomho\th_data\cmp\projects\bop\bop_results\bop_challenge_2019_eval'
+# Folder with results to be evaluated.
+results_path = r'/path/to/folder/with/results'
 
-bop_renderer_path =\
-  r''
+# Folder for the calculated pose errors and performance scores.
+eval_path = r'/path/to/eval/folder'
 
-meshlab_server_path =\
-  r'C:\Program Files\VCG\MeshLab133\meshlabserver.exe'
+# Path to the build folder of bop_renderer (github.com/thodan/bop_renderer).
+bop_renderer_path = r'/path/to/bop_renderer/build'
+
+# Executable of the MeshLab server.
+meshlab_server_path = r'/path/to/meshlabserver.exe'

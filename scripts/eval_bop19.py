@@ -60,9 +60,7 @@ p = {
   # description of the format. Example results can be found at:
   # http://ptak.felk.cvut.cz/6DB/public/bop_sample_results/bop_challenge_2019/
   'result_filenames': [
-    # '/path/to/csv/with/results',
-    'hodan-iros15_icbin-test.csv',
-    # 'hodan-iros15_tless-test-primesense.csv',
+    '/path/to/csv/with/results',
   ],
 
   # File with a list of estimation targets to consider. The file is assumed to
