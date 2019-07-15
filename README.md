@@ -1,10 +1,10 @@
 # BOP Toolkit
 
-A Python toolkit for the BOP benchmark on 6D object pose estimation
+A Python toolkit for the BOP benchmark for 6D object pose estimation
 (http://bop.felk.cvut.cz).
 
-- **bop_toolkit** - The core Python library for i/o operations, calculation of
-  pose errors, Python based rendering etc.
+- **bop_toolkit_lib** - The core Python library for i/o operations, calculation
+  of pose errors, Python based rendering etc.
 - **docs** - Documentation and conventions.
 - **scripts** - Scripts for evaluation, rendering of training images,
   visualization of 6D object poses etc.
@@ -46,18 +46,3 @@ an off-screen C++ renderer with Python bindings.
 See *scripts/eval_calc_errors.py* for an example on how to use the Python and
 C++ renderers - you can switch between them by setting *renderer_type* to
 *'python'* or *'cpp'*.
-
-## Evaluation in BOP Challenge 2019
-
-The evaluation in the [BOP evaluation system](http://bop.felk.cvut.cz) is done
-in two steps:
-
-1. Errors of pose estimates are calculated using
-*scripts/eval_calc_errors.py*
-([expected format of pose estimates](https://github.com/thodan/bop_toolkit/blob/master/docs/bop_challenge_2019_results_format.md),
-[samples](http://ptak.felk.cvut.cz/6DB/public/bop_sample_results)).
-2. Performance scores are calculated using *scripts/eval_calc_scores.py* (from
-the errors calculated in the first step).
-
-For details about the evaluation methodology, see:  
-[*Hodan, Michel et al., "BOP: Benchmark for 6D Object Pose Estimation", ECCV 2018.*](http://cmp.felk.cvut.cz/~hodanto2/data/hodan2018bop.pdf)
