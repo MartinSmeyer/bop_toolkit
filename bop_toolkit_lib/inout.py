@@ -120,7 +120,7 @@ def load_cam_params(path):
   :param path: Path to the JSON file.
   :return: Dictionary with the following items:
    - 'im_size': (width, height).
-   - 'K': 3x3 camera matrix.
+   - 'K': 3x3 intrinsic camera matrix.
    - 'depth_scale': Scale factor to convert the depth images to mm (optional).
   """
   c = load_json(path)

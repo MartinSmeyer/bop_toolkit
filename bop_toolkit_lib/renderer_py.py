@@ -189,7 +189,7 @@ def _calc_calib_proj(K, x0, y0, w, h, nc, fc, window_coords='y_down'):
   1) https://strawlab.org/2011/11/05/augmented-reality-with-OpenGL
   2) https://github.com/strawlab/opengl-hz/blob/master/src/calib_test_utils.py
 
-  :param K: 3x3 ndarray with the camera matrix.
+  :param K: 3x3 ndarray with the intrinsic camera matrix.
   :param x0 The X coordinate of the camera image origin (typically 0).
   :param y0: The Y coordinate of the camera image origin (typically 0).
   :param w: Image width.

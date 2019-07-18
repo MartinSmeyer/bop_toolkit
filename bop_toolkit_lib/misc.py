@@ -11,6 +11,8 @@ import subprocess
 import numpy as np
 from scipy.spatial import distance
 
+from bop_toolkit_lib import transform
+
 
 def log(s):
   """A logging function.
@@ -30,11 +32,51 @@ def ensure_dir(path):
     os.makedirs(path)
 
 
+def get_symmetry_transformations(model_info, max_sym_disc_step):
+  """Returns a set of symmetry transformations for an object model.
+
+  :param model_info: See files models_info.json provided with the datasets.
+  :param max_sym_disc_step: The maximum fraction of the object diameter which
+    the vertex that is the furthest from the axis of continuous rotational
+    symmetry travels between consecutive discretized rotations.
+  :return: The set of symmetry transformations.
+  """
+  # Identity.
+  trans = [{'R': np.eye(3), 't': np.array([[0, 0, 0]]).T}]
+
+  # Discrete symmetries.
+  if 'symmetries_discrete' in model_info:
+    for sym in model_info['symmetries_discrete']:
+      sym_4x4 = np.reshape(sym, (4, 4))
+      R = sym_4x4[:3, :3]
+      t = sym_4x4[:3, 3].reshape((3, 1))
+      trans.append({'R': R, 't': t})
+
+  # Discretized continuous symmetries.
+  if 'symmetries_continuous' in model_info:
+    for sym in model_info['symmetries_continuous']:
+      axis = np.array(sym['axis'])
+      offset = np.array(sym['offset']).reshape((3, 1))
+
+      # (PI * diameter) / (max_sym_disc_step * diameter) = discrete_steps_count
+      discrete_steps_count = int(np.ceil(np.pi / max_sym_disc_step))
+
+      # Discrete step in radians.
+      discrete_step = 2.0 * np.pi / discrete_steps_count
+
+      for i in range(1, discrete_steps_count):
+        R = transform.rotation_matrix(i * discrete_step, axis)[:3, :3]
+        t = -R.dot(offset) + offset
+        trans.append({'R': R, 't': t})
+
+  return trans
+
+
 def project_pts(pts, K, R, t):
   """Projects 3D points.
 
   :param pts: nx3 ndarray with the 3D points.
-  :param K: 3x3 ndarray with a camera matrix.
+  :param K: 3x3 ndarray with an intrinsic camera matrix.
   :param R: 3x3 ndarray with a rotation matrix.
   :param t: 3x1 ndarray with a translation vector.
   :return: nx2 ndarray with 2D image coordinates of the projections.
@@ -63,7 +105,7 @@ class Precomputer(object):
       is the Z coordinate of the 3D point [X, Y, Z] that projects to pixel [x, y],
       or 0 if there is no such 3D point (this is a typical output of the
       Kinect-like sensors).
-    :param K: 3x3 ndarray with a camera matrix.
+    :param K: 3x3 ndarray with an intrinsic camera matrix.
     :return: hxw ndarray (Xs/depth_im, Ys/depth_im)
     """
     if depth_im.shape != Precomputer.depth_im_shape:
@@ -87,7 +129,7 @@ def depth_im_to_dist_im_fast(depth_im, K):
     is the Z coordinate of the 3D point [X, Y, Z] that projects to pixel [x, y],
     or 0 if there is no such 3D point (this is a typical output of the
     Kinect-like sensors).
-  :param K: 3x3 ndarray with a camera matrix.
+  :param K: 3x3 ndarray with an intrinsic camera matrix.
   :return: hxw ndarray with the distance image, where dist_im[y, x] is the
     distance from the camera center to the 3D point [X, Y, Z] that projects to
     pixel [x, y], or 0 if there is no such 3D point.
@@ -109,7 +151,7 @@ def depth_im_to_dist_im(depth_im, K):
     is the Z coordinate of the 3D point [X, Y, Z] that projects to pixel [x, y],
     or 0 if there is no such 3D point (this is a typical output of the
     Kinect-like sensors).
-  :param K: 3x3 ndarray with a camera matrix.
+  :param K: 3x3 ndarray with an intrinsic camera matrix.
   :return: hxw ndarray with the distance image, where dist_im[y, x] is the
     distance from the camera center to the 3D point [X, Y, Z] that projects to
     pixel [x, y], or 0 if there is no such 3D point.

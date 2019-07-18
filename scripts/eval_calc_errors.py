@@ -45,6 +45,9 @@ p = {
   'vsd_taus': list(np.arange(0.05, 0.51, 0.05)),
   'vsd_normalized_by_diameter': True,
 
+  # MSSD/MSPD parameters (see misc.get_symmetry_transformations).
+  'max_sym_disc_step': 0.01,
+
   # Whether to ignore/break if some errors are missing.
   'skip_missing': True,
 
@@ -86,6 +89,7 @@ parser.add_argument('--vsd_deltas', default=vsd_deltas_str)
 parser.add_argument('--vsd_taus', default=','.join(map(str, p['vsd_taus'])))
 parser.add_argument('--vsd_normalized_by_diameter',
                     default=p['vsd_normalized_by_diameter'])
+parser.add_argument('--max_sym_disc_step', default=p['max_sym_disc_step'])
 parser.add_argument('--skip_missing', default=p['skip_missing'])
 parser.add_argument('--renderer_type', default=p['renderer_type'])
 parser.add_argument('--result_filenames',
@@ -102,6 +106,7 @@ p['vsd_deltas'] = {str(e.split(':')[0]): float(e.split(':')[1])
                    for e in args.vsd_deltas.split(',')}
 p['vsd_taus'] = map(float, args.vsd_taus.split(','))
 p['vsd_normalized_by_diameter'] = bool(args.vsd_normalized_by_diameter)
+p['max_sym_disc_step'] = bool(args.max_sym_disc_step)
 p['skip_missing'] = bool(args.skip_missing)
 p['renderer_type'] = str(args.renderer_type)
 p['result_filenames'] = args.result_filenames.split(',')
@@ -143,7 +148,7 @@ for result_filename in p['result_filenames']:
 
   # Load object models.
   models = {}
-  if p['error_type'] in ['ad', 'add', 'adi']:
+  if p['error_type'] in ['ad', 'add', 'adi', 'mssd', 'mspd']:
     misc.log('Loading object models...')
     for obj_id in dp_model['obj_ids']:
       models[obj_id] = inout.load_ply(
@@ -151,9 +156,16 @@ for result_filename in p['result_filenames']:
 
   # Load models info.
   models_info = None
-  if p['error_type'] in ['ad', 'add', 'adi', 'vsd', 'cus']:
+  if p['error_type'] in ['ad', 'add', 'adi', 'vsd', 'mssd', 'mspd', 'cus']:
     models_info = inout.load_json(
       dp_model['models_info_path'], keys_to_int=True)
+
+  # Get sets of symmetry transformations for the object models.
+  models_sym = None
+  if p['error_type'] in ['mssd', 'mspd']:
+    for obj_id in dp_model['obj_ids']:
+      models_sym[obj_id] = misc.get_symmetry_transformations(
+        models_info[obj_id], p['max_sym_disc_step'])
 
   # Initialize a renderer.
   ren = None
@@ -206,7 +218,7 @@ for result_filename in p['result_filenames']:
           'im: {}'.format(
             p['error_type'], method, dataset, split_type_str, scene_id, im_ind))
 
-      # Camera matrix.
+      # Intrinsic camera matrix.
       K = scene_camera[im_id]['cam_K']
 
       # Load the depth image if VSD is selected as the pose error function.
@@ -279,7 +291,7 @@ for result_filename in p['result_filenames']:
             # Check if the bounding spheres of the object in the two poses
             # overlap (to speed up calculation of some errors).
             spheres_overlap = None
-            if p['error_type'] in ['ad', 'add', 'adi']:
+            if p['error_type'] in ['ad', 'add', 'adi', 'mssd']:
               center_dist = np.linalg.norm(t_e - t_g)
               spheres_overlap = center_dist < models_info[obj_id]['diameter']
 
@@ -291,6 +303,19 @@ for result_filename in p['result_filenames']:
                   R_e, t_e, R_g, t_g, depth_im, K, p['vsd_deltas'][dataset],
                   p['vsd_taus'], p['vsd_normalized_by_diameter'],
                   models_info[obj_id]['diameter'], ren, obj_id, 'step')
+
+            elif p['error_type'] == 'mssd':
+              if not spheres_overlap:
+                e = [float('inf')]
+              else:
+                e = [pose_error.mssd(
+                  R_e, t_e, R_g, t_g, models[obj_id]['pts'],
+                  models_sym[obj_id])]
+
+            elif p['error_type'] == 'mspd':
+              e = [pose_error.mspd(
+                R_e, t_e, R_g, t_g, K, models[obj_id]['pts'],
+                models_sym[obj_id])]
 
             elif p['error_type'] in ['ad', 'add', 'adi']:
               if not spheres_overlap:

@@ -143,7 +143,7 @@ for result_fname in p['result_filenames']:
           'Visualizing pose estimates - method: {}, dataset: {}{}, scene: {}, '
           'im: {}'.format(method, dataset, split_type_str, scene_id, im_id))
 
-      # Camera matrix.
+      # Intrinsic camera matrix.
       K = scene_camera[im_id]['cam_K']
 
       im_ests_vis = []

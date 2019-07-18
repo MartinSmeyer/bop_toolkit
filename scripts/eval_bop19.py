@@ -52,6 +52,9 @@ p = {
   # Minimum visible surface fraction of a valid GT pose.
   'visib_gt_min': 0.1,
 
+  # See misc.get_symmetry_transformations().
+  'max_sym_disc_step': 0.01,
+
   # Type of the renderer (used for the VSD pose error function).
   'renderer_type': 'python',  # Options: 'cpp', 'python'.
 
@@ -74,6 +77,7 @@ p = {
 # ------------------------------------------------------------------------------
 parser = argparse.ArgumentParser()
 parser.add_argument('--visib_gt_min', default=p['visib_gt_min'])
+parser.add_argument('--max_sym_disc_step', default=p['max_sym_disc_step'])
 parser.add_argument('--renderer_type', default=p['renderer_type'])
 parser.add_argument('--result_filenames',
                     default=','.join(p['result_filenames']),
@@ -82,6 +86,7 @@ parser.add_argument('--targets_filename', default=p['targets_filename'])
 args = parser.parse_args()
 
 p['visib_gt_min'] = float(args.visib_gt_min)
+p['max_sym_disc_step'] = float(args.max_sym_disc_step)
 p['renderer_type'] = str(args.renderer_type)
 p['result_filenames'] = args.result_filenames.split(',')
 p['targets_filename'] = str(args.targets_filename)
@@ -107,6 +112,7 @@ for result_filename in p['result_filenames']:
       '--result_filenames={}'.format(result_filename),
       '--renderer_type={}'.format(p['renderer_type']),
       '--targets_filename={}'.format(p['targets_filename']),
+      '--max_sym_disc_step={}'.format(p['max_sym_disc_step']),
       '--skip_missing=1',
     ]
     if error['type'] == 'vsd':

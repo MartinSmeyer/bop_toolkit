@@ -41,8 +41,8 @@ def get_camera_params(datasets_path, dataset_name, cam_type=None):
     'cam_params_path': cam_params_path,
   }
 
-  # Add a dictionary containing the camera matrix ('K'), image size ('im_size'),
-  # and scale of the depth images ('depth_scale', optional).
+  # Add a dictionary containing the intrinsic camera matrix ('K'), image size
+  # ('im_size'), and scale of the depth images ('depth_scale', optional).
   p.update(inout.load_cam_params(cam_params_path))
 
   return p
