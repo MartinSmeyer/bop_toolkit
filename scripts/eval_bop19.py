@@ -142,7 +142,7 @@ for result_filename in p['result_filenames']:
           vsd_tau=vsd_tau)
         error_dir_paths[error_sign] = os.path.join(result_name, error_sign)
     else:
-      error_sign = misc.get_error_signature(error['type'], p['n_top'])
+      error_sign = misc.get_error_signature(error['type'], error['n_top'])
       error_dir_paths[error_sign] = os.path.join(result_name, error_sign)
 
     # Recall scores for all settings of the threshold of correctness (and also
