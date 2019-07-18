@@ -26,8 +26,8 @@ p = {
   'n_top': 1,
 
   # Pose error function.
-  # Options: 'vsd', 'ad', 'adi', 'add', 'cus', 'rete', 're', 'te'.
-  'error_type': 'vsd',
+  # Options: 'vsd', 'mssd', 'mspd', 'ad', 'adi', 'add', 'cus', 're', 'te, etc.
+  'error_type': 'mspd',
 
   # VSD parameters.
   'vsd_deltas': {
@@ -163,6 +163,7 @@ for result_filename in p['result_filenames']:
   # Get sets of symmetry transformations for the object models.
   models_sym = None
   if p['error_type'] in ['mssd', 'mspd']:
+    models_sym = {}
     for obj_id in dp_model['obj_ids']:
       models_sym[obj_id] = misc.get_symmetry_transformations(
         models_info[obj_id], p['max_sym_disc_step'])
