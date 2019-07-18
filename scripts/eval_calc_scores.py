@@ -38,6 +38,8 @@ p = {
   # Threshold of correctness for different pose error functions.
   'correct_th': {
     'vsd': [0.3],
+    'mssd': [0.2],
+    'mspd': [10],
     'cus': [0.5],
     'rete': [5.0, 5.0],  # [deg, cm].
     're': [5.0],  # [deg].
@@ -48,7 +50,10 @@ p = {
   },
 
   # Pose errors that will be normalized by object diameter before thresholding.
-  'normalized_by_diameter': ['ad', 'add', 'adi'],
+  'normalized_by_diameter': ['ad', 'add', 'adi', 'mssd'],
+
+  # Pose errors that will be normalized the image width before thresholding.
+  'normalized_by_im_width': ['mspd'],
 
   # Minimum visible surface fraction of a valid GT pose.
   'visib_gt_min': 0.1,
@@ -93,6 +98,8 @@ for err_type in p['correct_th']:
 
 parser.add_argument('--normalized_by_diameter',
                     default=','.join(p['normalized_by_diameter']))
+parser.add_argument('--normalized_by_im_width',
+                    default=','.join(p['normalized_by_im_width']))
 parser.add_argument('--visib_gt_min', default=p['visib_gt_min'])
 parser.add_argument('--error_dir_paths', default=','.join(p['error_dir_paths']),
                     help='Comma-sep. paths to errors from eval_calc_errors.py.')
@@ -110,6 +117,7 @@ for err_type in p['correct_th']:
     map(float, args.__dict__['correct_th_' + err_type].split(','))
 
 p['normalized_by_diameter'] = args.normalized_by_diameter.split(',')
+p['normalized_by_im_width'] = args.normalized_by_im_width.split(',')
 p['visib_gt_min'] = float(args.visib_gt_min)
 p['error_dir_paths'] = args.error_dir_paths.split(',')
 p['datasets_path'] = str(args.datasets_path)
@@ -213,6 +221,13 @@ for error_dir_path in p['error_dir_paths']:
         diameter = float(models_info[err['obj_id']]['diameter'])
         for gt_id in err['errors'].keys():
           err['errors'][gt_id] = [e / diameter for e in err['errors'][gt_id]]
+
+    # Normalize the errors by the image width.
+    if err_type in p['normalized_by_im_width']:
+      for err in scene_errs:
+        factor = 640.0 / float(dp_split['im_size'][0])
+        for gt_id in err['errors'].keys():
+          err['errors'][gt_id] = [factor * e for e in err['errors'][gt_id]]
 
     # Match the estimated poses to the ground-truth poses.
     matches += pose_matching.match_poses_scene(

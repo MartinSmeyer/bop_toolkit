@@ -37,16 +37,16 @@ p = {
       'vsd_taus': list(np.arange(0.05, 0.51, 0.05)),
       'correct_th': [[th] for th in np.arange(0.05, 0.51, 0.05)]
     },
-    # {
-    #   'n_top': -1,
-    #   'type': 'mssd',
-    #   'correct_th': [[th] for th in np.arange(0.05, 0.51, 0.05)]
-    # },
-    # {
-    #   'n_top': -1,
-    #   'type': 'mspd',
-    #   'correct_th': [[th] for th in np.arange(2.5, 26, 2.5)]
-    # },
+    {
+      'n_top': -1,
+      'type': 'mssd',
+      'correct_th': [[th] for th in np.arange(0.05, 0.51, 0.05)]
+    },
+    {
+      'n_top': -1,
+      'type': 'mspd',
+      'correct_th': [[th] for th in np.arange(5, 51, 5)]
+    },
   ],
 
   # Minimum visible surface fraction of a valid GT pose.
