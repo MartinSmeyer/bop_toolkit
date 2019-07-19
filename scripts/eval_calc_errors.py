@@ -36,7 +36,7 @@ p = {
   'skip_missing': True,
 
   # Type of the renderer (used for the VSD pose error function).
-  'renderer_type': 'python',  # Options: 'cpp', 'python'.
+  'renderer_type': 'cpp',  # Options: 'cpp', 'python'.
 
   # Names of files with results for which to calculate the errors (assumed to be
   # stored in folder config.eval_path). See docs/bop_challenge_2019.md for a
@@ -273,7 +273,6 @@ for result_filename in p['result_filenames']:
                 e = [pose_error.vsd(
                   R_e, t_e, R_g, t_g, depth_im, K, p['vsd_delta'], p['vsd_tau'],
                   ren, obj_id, 'step')]
-
             elif p['error_type'] in ['ad', 'add', 'adi']:
               if not spheres_overlap:
                 # Infinite error if the bounding spheres do not overlap. With

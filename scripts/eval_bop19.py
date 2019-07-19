@@ -48,12 +48,12 @@ p = {
   # description of the format. Example results can be found at:
   # http://ptak.felk.cvut.cz/6DB/public/bop_sample_results/bop_challenge_2019/
   'result_filenames': [
-    '/path/to/csv/with/results',
+    '/home_local/sund_ma/src/foreign_packages/bop/bop_results/bop_challenge_2019/hodan-iros15_lm-test.csv',
   ],
 
   # File with a list of estimation targets to consider. The file is assumed to
   # be stored in the dataset folder.
-  'targets_filename': 'test_targets_bop19.yml',
+  'targets_filename': '/home_local/sund_ma/src/foreign_packages/bop/datasets/bop/lm/test_targets_bop19.yml',
 }
 ################################################################################
 
