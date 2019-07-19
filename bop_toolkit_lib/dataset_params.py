@@ -28,10 +28,10 @@ def get_camera_params(datasets_path, dataset_name, cam_type=None):
     # Use images from the Primesense sensor as default.
     if cam_type is None:
       cam_type = 'primesense'
-    cam_filename = 'camera_{}.yml'.format(cam_type)
+    cam_filename = 'camera_{}.json'.format(cam_type)
 
   else:
-    cam_filename = 'camera.yml'
+    cam_filename = 'camera.json'
 
   # Path to the camera file.
   cam_params_path = join(datasets_path, dataset_name, cam_filename)
@@ -41,8 +41,8 @@ def get_camera_params(datasets_path, dataset_name, cam_type=None):
     'cam_params_path': cam_params_path,
   }
 
-  # Add a dictionary containing the camera matrix ('K'), image size ('im_size'),
-  # and scale of the depth images ('depth_scale', optional).
+  # Add a dictionary containing the intrinsic camera matrix ('K'), image size
+  # ('im_size'), and scale of the depth images ('depth_scale', optional).
   p.update(inout.load_cam_params(cam_params_path))
 
   return p
@@ -109,7 +109,7 @@ def get_model_params(datasets_path, dataset_name, model_type=None):
     'model_tpath': join(models_path, 'obj_{obj_id:06d}.ply'),
 
     # Path to a file with meta information about the object models.
-    'models_info_path': join(models_path, 'models_info.yml')
+    'models_info_path': join(models_path, 'models_info.json')
   }
 
   return p
@@ -245,7 +245,7 @@ def get_split_params(datasets_path, dataset_name, split, split_type=None):
 
   # MVTec ITODD.
   elif dataset_name == 'itodd':
-    p['scene_ids'] = {'test': [1]}[split]
+    p['scene_ids'] = {'val': [1], 'test': [1]}[split]
     p['im_size'] = (1280, 960)
 
     gray_ext = '.tif'
@@ -260,7 +260,6 @@ def get_split_params(datasets_path, dataset_name, split, split_type=None):
   # HomebrewedDB (HB).
   elif dataset_name == 'hb':
     p['scene_ids'] = {
-      'train': range(1, 34),
       'val': [3, 5, 13],
       'test': [3, 5, 13],
     }[split]
@@ -282,15 +281,15 @@ def get_split_params(datasets_path, dataset_name, split, split_type=None):
   p.update({
     # Path template to a file with per-image camera parameters.
     'scene_camera_tpath': join(
-      split_path, '{scene_id:06d}', 'scene_camera.yml'),
+      split_path, '{scene_id:06d}', 'scene_camera.json'),
 
     # Path template to a file with GT annotations.
     'scene_gt_tpath': join(
-      split_path, '{scene_id:06d}', 'scene_gt.yml'),
+      split_path, '{scene_id:06d}', 'scene_gt.json'),
 
     # Path template to a file with meta information about the GT annotations.
     'scene_gt_info_tpath': join(
-      split_path, '{scene_id:06d}', 'scene_gt_info.yml'),
+      split_path, '{scene_id:06d}', 'scene_gt_info.json'),
 
     # Path template to a gray image.
     'gray_tpath': join(

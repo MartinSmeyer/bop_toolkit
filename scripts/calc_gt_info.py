@@ -18,7 +18,6 @@ from bop_toolkit_lib import inout
 from bop_toolkit_lib import misc
 from bop_toolkit_lib import renderer
 from bop_toolkit_lib import visibility
-from bop_toolkit_lib import visualization
 
 
 # PARAMETERS.
@@ -53,6 +52,9 @@ p = {
 }
 ################################################################################
 
+
+if p['vis_visibility_masks']:
+  from bop_toolkit_lib import visualization
 
 # Load dataset parameters.
 dp_split = dataset_params.get_split_params(
@@ -110,7 +112,8 @@ for scene_id in dp_split['scene_ids']:
       dist_im = misc.depth_im_to_dist_im(depth, K)
 
       # Estimation of the visibility mask.
-      visib_gt = visibility.estimate_visib_mask_gt(dist_im, dist_gt, p['delta'])
+      visib_gt = visibility.estimate_visib_mask_gt(
+        dist_im, dist_gt, p['delta'], visib_mode='bop19')
 
       # Visible surface fraction.
       obj_mask_gt = dist_gt > 0
@@ -123,8 +126,10 @@ for scene_id in dp_split['scene_ids']:
         visib_fract = 0.0
 
       # Bounding box of the object projection.
-      ys, xs = obj_mask_gt.nonzero()
-      bbox = misc.calc_2d_bbox(xs, ys, im_size)
+      bbox = [-1, -1, -1, -1]
+      if px_count_visib > 0:
+        ys, xs = obj_mask_gt.nonzero()
+        bbox = misc.calc_2d_bbox(xs, ys, im_size)
 
       # Bounding box of the visible surface part.
       bbox_visib = [-1, -1, -1, -1]
@@ -164,4 +169,4 @@ for scene_id in dp_split['scene_ids']:
   # Save the info for the current scene.
   scene_gt_info_path = dp_split['scene_gt_info_tpath'].format(scene_id=scene_id)
   misc.ensure_dir(os.path.dirname(scene_gt_info_path))
-  inout.save_yaml(scene_gt_info_path, scene_gt_info)
+  inout.save_json(scene_gt_info_path, scene_gt_info)

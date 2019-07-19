@@ -101,7 +101,7 @@ def vis_object_poses(
     - 'R': 3x3 ndarray with a rotation matrix.
     - 't': 3x1 ndarray with a translation vector.
     - 'text_info': Info to write at the object (see write_text_on_image).
-  :param K: 3x3 ndarray with a camera matrix.
+  :param K: 3x3 ndarray with an intrinsic camera matrix.
   :param renderer: Instance of the Renderer class (see renderer.py).
   :param rgb: ndarray with the RGB input image.
   :param depth: ndarray with the depth input image.

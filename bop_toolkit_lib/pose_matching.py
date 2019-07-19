@@ -6,7 +6,7 @@
 import numpy as np
 
 
-def match_poses(errs, error_threshs, max_ests_count=0, gt_valid_mask=None):
+def match_poses(errs, error_ths, max_ests_count=0, gt_valid_mask=None):
   """Matches the estimated poses to the ground-truth poses.
 
   The estimated poses are greedily matched to the ground truth poses in the
@@ -21,7 +21,7 @@ def match_poses(errs, error_threshs, max_ests_count=0, gt_valid_mask=None):
     - 'score': Confidence score of the pose estimate.
     - 'errors': Dictionary mapping ground-truth ID's to errors of the pose
         estimate w.r.t. the ground-truth poses.
-  :param error_threshs: Thresholds of correctness. The pose error can be given
+  :param error_ths: Thresholds of correctness. The pose error can be given
     by more than one element (e.g. translational + rotational error), in which
     case there is one threshold for each element.
   :param max_ests_count: Top k pose estimates to consider (0 = all).
@@ -45,7 +45,7 @@ def match_poses(errs, error_threshs, max_ests_count=0, gt_valid_mask=None):
     errs_sorted = errs_sorted[:max_ests_count]
 
   # Number of values defining the error (e.g. 1 for "ADD", 2 for "5deg 5cm").
-  error_num_elems = len(error_threshs)
+  error_num_elems = len(error_ths)
 
   # Greedily match the estimated poses to the ground truth poses in the order of
   # decreasing score of the estimates.
@@ -54,7 +54,7 @@ def match_poses(errs, error_threshs, max_ests_count=0, gt_valid_mask=None):
   for e in errs_sorted:
 
     best_gt_id = -1
-    best_error = list(error_threshs)
+    best_error = list(error_ths)
     for gt_id, error in e['errors'].items():
 
       # If the mask of valid GT poses is not provided, consider all valid.
@@ -75,7 +75,7 @@ def match_poses(errs, error_threshs, max_ests_count=0, gt_valid_mask=None):
       gt_matched.append(best_gt_id)
 
       # Error normalized by the threshold.
-      best_errors_normed = [best_error[i] / float(error_threshs[i])
+      best_errors_normed = [best_error[i] / float(error_ths[i])
                             for i in range(error_num_elems)]
 
       # Save info about the match.
@@ -91,7 +91,7 @@ def match_poses(errs, error_threshs, max_ests_count=0, gt_valid_mask=None):
 
 
 def match_poses_scene(scene_id, scene_gt, scene_gt_valid, scene_errs,
-                      error_obj_threshs, n_top):
+                      correct_th, n_top):
   """Matches the estimated poses to the ground-truth poses in one scene.
 
   :param scene_id: Scene ID.
@@ -145,7 +145,7 @@ def match_poses_scene(scene_id, scene_gt, scene_gt_valid, scene_errs,
         # Greedily match the estimated poses to the ground truth poses.
         errs_im_obj = scene_errs_org[im_id][obj_id]
         ms = match_poses(
-          errs_im_obj, error_obj_threshs[obj_id], n_top, scene_gt_valid[im_id])
+          errs_im_obj, correct_th, n_top, scene_gt_valid[im_id])
 
         # Update info about the matched GT poses.
         for m in ms:

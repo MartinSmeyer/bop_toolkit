@@ -8,55 +8,9 @@ import struct
 import numpy as np
 import imageio
 import png
-import ruamel.yaml as yaml
+import json
 
 from bop_toolkit_lib import misc
-
-
-def load_yaml(path):
-  """Loads content of a YAML file.
-
-  :param path: Path to the YAML file.
-  :return: Content of the loaded YAML file.
-  """
-  with open(path, 'r') as f:
-    content = yaml.load(f, Loader=yaml.CLoader)
-  return content
-
-
-def save_yaml(path, content):
-  """Saves the provided content to a YAML file.
-
-  :param path: Path to the output YAML file.
-  :param content: Dictionary/list to save.
-  """
-  with open(path, 'w') as f:
-    yaml.dump(content, f, Dumper=yaml.CDumper, width=100000)
-
-
-def load_cam_params(path):
-  """Loads camera parameters from a YAML file.
-
-  :param path: Path to the YAML file.
-  :return: Dictionary with the following items:
-   - 'im_size': (width, height).
-   - 'K': 3x3 camera matrix.
-   - 'depth_scale': Scale factor to convert the depth images to mm (optional).
-  """
-  with open(path, 'r') as f:
-    c = yaml.load(f, Loader=yaml.CLoader)
-
-  cam = {
-    'im_size': (c['width'], c['height']),
-    'K': np.array([[c['fx'], 0.0, c['cx']],
-                   [0.0, c['fy'], c['cy']],
-                   [0.0, 0.0, 1.0]])
-  }
-
-  if 'depth_scale' in c.keys():
-    cam['depth_scale'] = float(c['depth_scale'])
-
-  return cam
 
 
 def load_im(path):
@@ -110,75 +64,148 @@ def save_depth(path, im):
     w_depth.write(f, np.reshape(im_uint16, (-1, im.shape[1])))
 
 
+def load_json(path, keys_to_int=False):
+  """Loads content of a JSON file.
+
+  :param path: Path to the JSON file.
+  :return: Content of the loaded JSON file.
+  """
+  # Keys to integers.
+  def convert_keys_to_int(x):
+    return {int(k) if k.lstrip('-').isdigit() else k: v for k, v in x.items()}
+
+  with open(path, 'r') as f:
+    if keys_to_int:
+      content = json.load(f, object_hook=lambda x: convert_keys_to_int(x))
+    else:
+      content = json.load(f)
+
+  return content
+
+
+def save_json(path, content):
+  """Saves the provided content to a JSON file.
+
+  :param path: Path to the output JSON file.
+  :param content: Dictionary/list to save.
+  """
+  with open(path, 'w') as f:
+
+    if isinstance(content, dict):
+      f.write('{\n')
+      content_sorted = sorted(content.items(), key=lambda x: x[0])
+      for elem_id, (k, v) in enumerate(content_sorted):
+        f.write('  \"{}\": {}'.format(k, json.dumps(v, sort_keys=True)))
+        if elem_id != len(content) - 1:
+          f.write(',')
+        f.write('\n')
+      f.write('}')
+
+    elif isinstance(content, list):
+      f.write('[\n')
+      for elem_id, elem in enumerate(content):
+        f.write('  {}'.format(json.dumps(elem, sort_keys=True)))
+        if elem_id != len(content) - 1:
+          f.write(',')
+        f.write('\n')
+      f.write(']')
+
+    else:
+      json.dump(content, f, sort_keys=True)
+
+
+def load_cam_params(path):
+  """Loads camera parameters from a JSON file.
+
+  :param path: Path to the JSON file.
+  :return: Dictionary with the following items:
+   - 'im_size': (width, height).
+   - 'K': 3x3 intrinsic camera matrix.
+   - 'depth_scale': Scale factor to convert the depth images to mm (optional).
+  """
+  c = load_json(path)
+
+  cam = {
+    'im_size': (c['width'], c['height']),
+    'K': np.array([[c['fx'], 0.0, c['cx']],
+                   [0.0, c['fy'], c['cy']],
+                   [0.0, 0.0, 1.0]])
+  }
+
+  if 'depth_scale' in c.keys():
+    cam['depth_scale'] = float(c['depth_scale'])
+
+  return cam
+
+
 def load_scene_camera(path):
-  """Loads content of a YAML file with information about the scene camera.
+  """Loads content of a JSON file with information about the scene camera.
 
   See docs/bop_datasets_format.md for details.
 
-  :param path: Path to the YAML file.
+  :param path: Path to the JSON file.
   :return: Dictionary with the loaded content.
   """
-  with open(path, 'r') as f:
-    info = yaml.load(f, Loader=yaml.CLoader)
-    for eid in info.keys():
-      if 'cam_K' in info[eid].keys():
-        info[eid]['cam_K'] =\
-          np.array(info[eid]['cam_K'], np.float).reshape((3, 3))
-      if 'cam_R_w2c' in info[eid].keys():
-        info[eid]['cam_R_w2c'] =\
-          np.array(info[eid]['cam_R_w2c'], np.float).reshape((3, 3))
-      if 'cam_t_w2c' in info[eid].keys():
-        info[eid]['cam_t_w2c'] =\
-          np.array(info[eid]['cam_t_w2c'], np.float).reshape((3, 1))
-  return info
+  scene_camera = load_json(path, keys_to_int=True)
+
+  for im_id in scene_camera.keys():
+    if 'cam_K' in scene_camera[im_id].keys():
+      scene_camera[im_id]['cam_K'] = \
+        np.array(scene_camera[im_id]['cam_K'], np.float).reshape((3, 3))
+    if 'cam_R_w2c' in scene_camera[im_id].keys():
+      scene_camera[im_id]['cam_R_w2c'] = \
+        np.array(scene_camera[im_id]['cam_R_w2c'], np.float).reshape((3, 3))
+    if 'cam_t_w2c' in scene_camera[im_id].keys():
+      scene_camera[im_id]['cam_t_w2c'] = \
+        np.array(scene_camera[im_id]['cam_t_w2c'], np.float).reshape((3, 1))
+  return scene_camera
 
 
 def save_scene_camera(path, scene_camera):
-  """Saves information about the scene camera to a YAML file.
+  """Saves information about the scene camera to a JSON file.
 
   See docs/bop_datasets_format.md for details.
 
-  :param path: Path to the output YAML file.
-  :param scene_camera: Dictionary to save to the YAML file.
+  :param path: Path to the output JSON file.
+  :param scene_camera: Dictionary to save to the JSON file.
   """
   for im_id in sorted(scene_camera.keys()):
-    im_info = scene_camera[im_id]
-    if 'cam_K' in im_info.keys():
-      im_info['cam_K'] = im_info['cam_K'].flatten().tolist()
-    if 'cam_R_w2c' in im_info.keys():
-      im_info['cam_R_w2c'] = im_info['cam_R_w2c'].flatten().tolist()
-    if 'cam_t_w2c' in im_info.keys():
-      im_info['cam_t_w2c'] = im_info['cam_t_w2c'].flatten().tolist()
-  with open(path, 'w') as f:
-    yaml.dump(scene_camera, f, Dumper=yaml.CDumper, width=10000)
+    im_camera = scene_camera[im_id]
+    if 'cam_K' in im_camera.keys():
+      im_camera['cam_K'] = im_camera['cam_K'].flatten().tolist()
+    if 'cam_R_w2c' in im_camera.keys():
+      im_camera['cam_R_w2c'] = im_camera['cam_R_w2c'].flatten().tolist()
+    if 'cam_t_w2c' in im_camera.keys():
+      im_camera['cam_t_w2c'] = im_camera['cam_t_w2c'].flatten().tolist()
+  save_json(path, scene_camera)
 
 
 def load_scene_gt(path):
-  """Loads content of a YAML file with ground-truth annotations.
+  """Loads content of a JSON file with ground-truth annotations.
 
   See docs/bop_datasets_format.md for details.
 
-  :param path: Path to the YAML file.
+  :param path: Path to the JSON file.
   :return: Dictionary with the loaded content.
   """
-  with open(path, 'r') as f:
-    gts = yaml.load(f, Loader=yaml.CLoader)
-    for im_id, gts_im in gts.items():
-      for gt in gts_im:
-        if 'cam_R_m2c' in gt.keys():
-          gt['cam_R_m2c'] = np.array(gt['cam_R_m2c'], np.float).reshape((3, 3))
-        if 'cam_t_m2c' in gt.keys():
-          gt['cam_t_m2c'] = np.array(gt['cam_t_m2c'], np.float).reshape((3, 1))
-  return gts
+  scene_gt = load_json(path, keys_to_int=True)
+
+  for im_id, im_gt in scene_gt.items():
+    for gt in im_gt:
+      if 'cam_R_m2c' in gt.keys():
+        gt['cam_R_m2c'] = np.array(gt['cam_R_m2c'], np.float).reshape((3, 3))
+      if 'cam_t_m2c' in gt.keys():
+        gt['cam_t_m2c'] = np.array(gt['cam_t_m2c'], np.float).reshape((3, 1))
+  return scene_gt
 
 
 def save_scene_gt(path, scene_gt):
-  """Saves ground-truth annotations to a YAML file.
+  """Saves ground-truth annotations to a JSON file.
 
   See docs/bop_datasets_format.md for details.
 
-  :param path: Path to the output YAML file.
-  :param scene_gt: Dictionary to save to the YAML file.
+  :param path: Path to the output JSON file.
+  :param scene_gt: Dictionary to save to the JSON file.
   """
   for im_id in sorted(scene_gt.keys()):
     im_gts = scene_gt[im_id]
@@ -189,20 +216,20 @@ def save_scene_gt(path, scene_gt):
         gt['cam_t_m2c'] = gt['cam_t_m2c'].flatten().tolist()
       if 'obj_bb' in gt.keys():
         gt['obj_bb'] = [int(x) for x in gt['obj_bb']]
-  with open(path, 'w') as f:
-    yaml.dump(scene_gt, f, Dumper=yaml.CDumper, width=10000)
+  save_json(path, scene_gt)
 
 
-def load_bop_results(path, version='bop_challenge_2019'):
+def load_bop_results(path, version='bop19'):
   """Loads 6D object pose estimates from a file.
 
   :param path: Path to a file with pose estimates.
+  :param version: Version of the results.
   :return: List of loaded poses.
   """
   results = []
 
   # See docs/bop_challenge_2019.md for details.
-  if version == 'bop_challenge_2019':
+  if version == 'bop19':
     header = 'scene_id,im_id,obj_id,score,R,t,time'
     with open(path, 'r') as f:
       line_id = 0
@@ -235,15 +262,15 @@ def load_bop_results(path, version='bop_challenge_2019'):
   return results
 
 
-def save_bop_results(path, results, version='bop_challenge_2019'):
-  """Saves 6D object pose estimates to a YAML file.
+def save_bop_results(path, results, version='bop19'):
+  """Saves 6D object pose estimates to a file.
 
-  :param path: Path to the output YAML file.
-  :param res: Dictionary with pose estimates.
-  :param run_time: Time which the evaluated method took to make the estimates.
+  :param path: Path to the output file.
+  :param results: Dictionary with pose estimates.
+  :param version: Version of the results.
   """
   # See docs/bop_challenge_2019.md for details.
-  if version == 'bop_challenge_2019':
+  if version == 'bop19':
     lines = ['scene_id,im_id,obj_id,score,R,t,time']
     for res in results:
       if 'time' in res:
@@ -267,41 +294,40 @@ def save_bop_results(path, results, version='bop_challenge_2019'):
     raise ValueError('Unknown version of BOP results.')
 
 
-def save_errors(path, errors):
-  """Saves errors of pose estimates to a YAML file.
+def check_bop_results(path, version='bop19'):
+  """Checks if the format of BOP results is correct.
 
-  See scripts/eval_calc_errors.py for details.
-
-  :param path: Path to the output YAML file.
-  :return: Dictionary with errors to save.
+  :param result_filenames: Path to a file with pose estimates.
+  :param version: Version of the results.
+  :return: True if the format is correct, False if it is not correct.
   """
-  with open(path, 'w') as f:
-    line_tpl = '- {{im_id: {:d}, obj_id: {:d}, est_id: {:d}, ' \
-               'score: {:f}, errors: {}}}\n'
-    error_tpl = '{:d}: [{}]'
-    txt = ''
-    for e in errors:
-      txt_errors_elems = []
-      for gt_id, error in e['errors'].items():
-        error_str = map(str, error)
-        txt_errors_elems.append(error_tpl.format(gt_id, ', '.join(error_str)))
-      txt_errors = '{' + ', '.join(txt_errors_elems) + '}'
-      txt += line_tpl.format(e['im_id'], e['obj_id'], e['est_id'],
-                             e['score'], txt_errors)
-    f.write(txt)
+  check_passed = True
+  check_msg = 'OK'
+  try:
+    results = load_bop_results(path, version)
 
+    if version == 'bop19':
+      # Check if the time for all estimates from the same image are the same.
+      times = {}
+      for result in results:
+        result_key = '{:06d}_{:06d}'.format(result['scene_id'], result['im_id'])
+        if result_key in times:
+          if abs(times[result_key] - result['time']) > 0.001:
+            check_passed = False
+            check_msg = \
+              'The running time for scene {} and image {} is not the same for' \
+              ' all estimates'.format(result['scene_id'], result['im_id'])
+            misc.log(check_msg)
+            break
+        else:
+          times[result_key] = result['time']
 
-def load_errors(path):
-  """Loads errors of pose estimates from a YAML file.
+  except Exception as e:
+    check_passed = False
+    check_msg = 'ERROR when loading file {}:\n{}'.format(path, e)
+    misc.log(check_msg)
 
-  See scripts/eval_calc_errors.py for details.
-
-  :param path: Path to a YAML file with errors.
-  :return: Dictionary with the loaded errors.
-  """
-  with open(path, 'r') as f:
-    errors = yaml.load(f, Loader=yaml.CLoader)
-  return errors
+  return check_passed, check_msg
 
 
 def load_ply(path):
@@ -562,9 +588,9 @@ def save_ply2(path, pts, pts_colors=None, pts_normals=None, faces=None,
 
   f.write(
     'element vertex ' + str(valid_pts_count) + '\n'
-    'property float x\n'
-    'property float y\n'
-    'property float z\n'
+                                               'property float x\n'
+                                               'property float y\n'
+                                               'property float z\n'
   )
   if pts_normals is not None:
     f.write(
@@ -586,7 +612,7 @@ def save_ply2(path, pts, pts_colors=None, pts_normals=None, faces=None,
   if faces is not None:
     f.write(
       'element face ' + str(len(faces)) + '\n'
-      'property list uchar int vertex_indices\n'
+                                          'property list uchar int vertex_indices\n'
     )
   if texture_uv_face is not None:
     f.write(

@@ -18,10 +18,10 @@ The datasets have the following structure:
 * *test[\_TESTTYPE]/Y* - Test images of scene Y.
 
 
-* *camera.yml* - Camera parameters (for sensor simulation only; per-image camera
-  parameters are in files *scene_camera.yml* - see below).
+* *camera.json* - Camera parameters (for sensor simulation only; per-image
+  camera parameters are in files *scene_camera.json* - see below).
 * *dataset_info.md* - Dataset-specific information.
-* *test_targets_bop19.yml* - A list of test targets used for the evaluation in
+* *test_targets_bop19.json* - A list of test targets used for the evaluation in
   the BOP paper [1] and in the BOP Challenge 2019.
 
 
@@ -49,7 +49,7 @@ test images with private ground-truth annotations can be calculated in the
 
 ### Camera parameters
 
-Each set of images is accompanied with file *scene\_camera.yml* which contains
+Each set of images is accompanied with file *scene\_camera.json* which contains
 the following information for each image:
 
 * *cam\_K* - 3x3 intrinsic camera matrix K (saved row-wise).
@@ -62,9 +62,9 @@ The matrix K may be different for each image. For example, the principal point
 is not constant for images in T-LESS as the images were obtained by cropping a
 region around the projection of the origin of the world coordinate system.
 
-Note that the intrinsic camera parameters can be found also in file *camera.yml*
-in the root folder of a dataset. These parameters are meant only for simulation
-of the used sensor when rendering training images.
+Note that the intrinsic camera parameters can be found also in file
+*camera.json* in the root folder of a dataset. These parameters are meant only
+for simulation of the used sensor when rendering training images.
 
 P\_w2i = K * [R\_w2c, t\_w2c] is the camera matrix which transforms 3D point
 p\_w = [x, y, z, 1]' in the world coordinate system to 2D point p\_i =
@@ -72,8 +72,8 @@ p\_w = [x, y, z, 1]' in the world coordinate system to 2D point p\_i =
 
 ### Ground-truth annotations
 
-The ground truth object poses are provided in files *scene_gt.yml* which contain
-the following information for each annotated object instance:
+The ground truth object poses are provided in files *scene_gt.json* which
+contain the following information for each annotated object instance:
 
 * *obj\_id* - Object ID.
 * *cam\_R\_m2c* - 3x3 rotation matrix R\_m2c (saved row-wise).
@@ -86,8 +86,8 @@ p\_m = [x, y, z, 1]' in the model coordinate system to 2D point p\_i =
 ### Meta information about the ground-truth poses
 
 The following meta information about the ground-truth poses is provided in files
-*scene_gt_info.yml* (calculated using *scripts/calc_gt_info.py*, with delta =
-15mm):
+*scene_gt_info.json* (calculated using *scripts/calc_gt_info.py*, with delta =
+5mm for ITODD and 15mm for other datasets):
 
 * *bbox\_obj* - 2D bounding box of the object silhouette given by (x, y, width,
   height), where (x, y) is the top-left corner of the bounding box.
@@ -109,7 +109,7 @@ capturing real objects from various viewpoints or by rendering 3D object models
 
 The viewpoints, from which the objects were rendered, were sampled from a view
 sphere as in [2] by recursively subdividing an icosahedron. The level of
-subdivision at which a viewpoint was added is saved in *scene_camera.yml* as
+subdivision at which a viewpoint was added is saved in *scene_camera.json* as
 *view_level* (viewpoints corresponding to vertices of the icosahedron have
 *view_level* = 0, viewpoints obtained in the first subdivision step have
 *view_level* = 1, etc.). To reduce the number of viewpoints while preserving
@@ -132,7 +132,7 @@ The vertex normals were calculated using
 [MeshLab](http://meshlab.sourceforge.net/) as the angle-weighted sum of face
 normals incident to a vertex [4].
 
-Each folder with object models contains file *models_info.yml*, which includes
+Each folder with object models contains file *models_info.json*, which includes
 the 3D bounding box and the diameter for each object model. The diameter is
 calculated as the largest distance between any pair of model vertices.
 
@@ -150,7 +150,8 @@ with the camera looking along the Z axis.
 
 ## Units
 
-* Depth images: See files *camera.yml/scene_camera.yml* in individual datasets.
+* Depth images: See files *camera.json/scene_camera.json* in individual
+  datasets.
 * 3D object models: 1 mm
 * Translation vectors: 1 mm
 

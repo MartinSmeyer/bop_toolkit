@@ -69,13 +69,13 @@ p = {
 
 # Load colors.
 colors_path = os.path.join(
-  os.path.dirname(visualization.__file__), 'colors.yml')
-colors = inout.load_yaml(colors_path)
+  os.path.dirname(visualization.__file__), 'colors.json')
+colors = inout.load_json(colors_path)
 
 for result_fname in p['result_filenames']:
   misc.log('Processing: ' + result_fname)
 
-  # Parse info about the method and the dataset from the folder name.
+  # Parse info about the method and the dataset from the filename.
   result_name = os.path.splitext(os.path.basename(result_fname))[0]
   result_info = result_name.split('_')
   method = result_info[0]
@@ -143,7 +143,7 @@ for result_fname in p['result_filenames']:
           'Visualizing pose estimates - method: {}, dataset: {}{}, scene: {}, '
           'im: {}'.format(method, dataset, split_type_str, scene_id, im_id))
 
-      # Camera matrix.
+      # Intrinsic camera matrix.
       K = scene_camera[im_id]['cam_K']
 
       im_ests_vis = []

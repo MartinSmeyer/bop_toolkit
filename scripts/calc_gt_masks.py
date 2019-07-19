@@ -27,7 +27,7 @@ p = {
   'dataset_split_type': None,
 
   # Tolerance used in the visibility test [mm].
-  'delta': 15,
+  'delta': 15,  # 5 for ITODD, 15 for the other datasets.
 
   # Type of the renderer.
   'renderer_type': 'python',  # Options: 'cpp', 'python'.
@@ -114,7 +114,7 @@ for scene_id in dp_split['scene_ids']:
 
       # Mask of the visible part of the object silhouette.
       mask_visib = visibility.estimate_visib_mask_gt(
-        dist_im, dist_gt, p['delta'])
+        dist_im, dist_gt, p['delta'], visib_mode='bop19')
 
       # Save the calculated masks.
       mask_path = dp_split['mask_tpath'].format(

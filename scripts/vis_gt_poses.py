@@ -29,7 +29,7 @@ p = {
   # File with a list of estimation targets used to determine the set of images
   # for which the GT poses will be visualized. The file is assumed to be stored
   # in the dataset folder. None = all images.
-  # 'targets_filename': 'test_targets_bop19.yml',
+  # 'targets_filename': 'test_targets_bop19.json',
   'targets_filename': None,
 
   # Select ID's of scenes, images and GT poses to be processed.
@@ -82,12 +82,12 @@ dp_model = dataset_params.get_model_params(
 
 # Load colors.
 colors_path = os.path.join(
-  os.path.dirname(visualization.__file__), 'colors.yml')
-colors = inout.load_yaml(colors_path)
+  os.path.dirname(visualization.__file__), 'colors.json')
+colors = inout.load_json(colors_path)
 
 # Subset of images for which the ground-truth poses will be rendered.
 if p['targets_filename'] is not None:
-  targets = inout.load_yaml(
+  targets = inout.load_json(
     os.path.join(dp_split['base_path'], p['targets_filename']))
   scene_im_ids = {}
   for target in targets:

@@ -13,8 +13,9 @@ from scipy import spatial
 from bop_toolkit_lib import misc
 from bop_toolkit_lib import visibility
 
-def vsd(R_est, t_est, R_gt, t_gt, depth_test, K, delta, tau, renderer, obj_id,
-        cost_type='step'):
+
+def vsd(R_est, t_est, R_gt, t_gt, depth_test, K, delta, taus,
+        normalized_by_diameter, diameter, renderer, obj_id, cost_type='step'):
   """Visible Surface Discrepancy -- by Hodan, Michel et al. (ECCV 2018).
 
   :param R_est: 3x3 ndarray with the estimated rotation matrix.
@@ -22,16 +23,19 @@ def vsd(R_est, t_est, R_gt, t_gt, depth_test, K, delta, tau, renderer, obj_id,
   :param R_gt: 3x3 ndarray with the ground-truth rotation matrix.
   :param t_gt: 3x1 ndarray with the ground-truth translation vector.
   :param depth_test: hxw ndarray with the test depth image.
-  :param K: 3x3 ndarray with a camera matrix.
+  :param K: 3x3 ndarray with an intrinsic camera matrix.
   :param delta: Tolerance used for estimation of the visibility masks.
-  :param tau: Misalignment tolerance.
+  :param taus: A list of misalignment tolerance values.
+  :param normalized_by_diameter: Whether to normalize the pixel-wise distances
+      by the object diameter.
+  :param diameter: Object diameter.
   :param renderer: Instance of the Renderer class (see renderer.py).
   :param obj_id: Object identifier.
   :param cost_type: Type of the pixel-wise matching cost:
       'tlinear' - Used in the original definition of VSD in:
           Hodan et al., On Evaluation of 6D Object Pose Estimation, ECCVW'16
       'step' - Used for SIXD Challenge 2017 onwards.
-  :return: The calculated error.
+  :return: List of calculated errors (one for each misalignment tolerance).
   """
   # Render depth images of the model in the estimated and the ground-truth pose.
   fx, fy, cx, cy = K[0, 0], K[1, 1], K[0, 2], K[1, 2]
@@ -47,34 +51,97 @@ def vsd(R_est, t_est, R_gt, t_gt, depth_test, K, delta, tau, renderer, obj_id,
 
   # Visibility mask of the model in the ground-truth pose.
   visib_gt = visibility.estimate_visib_mask_gt(
-    dist_test, dist_gt, delta)
+    dist_test, dist_gt, delta, visib_mode='bop19')
 
   # Visibility mask of the model in the estimated pose.
   visib_est = visibility.estimate_visib_mask_est(
-    dist_test, dist_est, visib_gt, delta)
+    dist_test, dist_est, visib_gt, delta, visib_mode='bop19')
 
   # Intersection and union of the visibility masks.
   visib_inter = np.logical_and(visib_gt, visib_est)
   visib_union = np.logical_or(visib_gt, visib_est)
 
-  # Pixel-wise matching cost.
-  costs = np.abs(dist_gt[visib_inter] - dist_est[visib_inter])
-  if cost_type == 'step':
-    costs = costs >= tau
-  elif cost_type == 'tlinear':  # Truncated linear function.
-    costs *= (1.0 / tau)
-    costs[costs > 1.0] = 1.0
-  else:
-    raise ValueError('Unknown pixel matching cost.')
-
-  # Visible Surface Discrepancy.
   visib_union_count = visib_union.sum()
   visib_comp_count = visib_union_count - visib_inter.sum()
-  if visib_union_count > 0:
-    e = (costs.sum() + visib_comp_count) / float(visib_union_count)
+
+  # Pixel-wise distances.
+  dists = np.abs(dist_gt[visib_inter] - dist_est[visib_inter])
+
+  # Normalization of pixel-wise distances by object diameter.
+  if normalized_by_diameter:
+    dists /= diameter
+
+  # Calculate VSD for each provided value of the misalignment tolerance.
+  if visib_union_count == 0:
+    errors = [1.0] * len(taus)
   else:
-    e = 1.0
-  return e
+    errors = []
+    for tau in taus:
+
+      # Pixel-wise matching cost.
+      if cost_type == 'step':
+        costs = dists >= tau
+      elif cost_type == 'tlinear':  # Truncated linear function.
+        costs = dists / tau
+        costs[costs > 1.0] = 1.0
+      else:
+        raise ValueError('Unknown pixel matching cost.')
+
+      e = (np.sum(costs) + visib_comp_count) / float(visib_union_count)
+      errors.append(e)
+
+  return errors
+
+
+def mssd(R_est, t_est, R_gt, t_gt, pts, syms):
+  """Maximum Symmetry-Aware Surface Distance (MSSD).
+
+  See: http://bop.felk.cvut.cz/challenges/bop-challenge-2019/
+
+  :param R_est: 3x3 ndarray with the estimated rotation matrix.
+  :param t_est: 3x1 ndarray with the estimated translation vector.
+  :param R_gt: 3x3 ndarray with the ground-truth rotation matrix.
+  :param t_gt: 3x1 ndarray with the ground-truth translation vector.
+  :param pts: nx3 ndarray with 3D model points.
+  :param syms: Set of symmetry transformations, each given by a dictionary with:
+    - 'R': 3x3 ndarray with the rotation matrix.
+    - 't': 3x1 ndarray with the translation vector.
+  :return: The calculated error.
+  """
+  pts_est = misc.transform_pts_Rt(pts, R_est, t_est)
+  es = []
+  for sym in syms:
+    R_gt_sym = R_gt.dot(sym['R'])
+    t_gt_sym = R_gt.dot(sym['t']) + t_gt
+    pts_gt_sym = misc.transform_pts_Rt(pts, R_gt_sym, t_gt_sym)
+    es.append(np.linalg.norm(pts_est - pts_gt_sym, axis=1).max())
+  return min(es)
+
+
+def mspd(R_est, t_est, R_gt, t_gt, K, pts, syms):
+  """Maximum Symmetry-Aware Projection Distance (MSPD).
+
+  See: http://bop.felk.cvut.cz/challenges/bop-challenge-2019/
+
+  :param R_est: 3x3 ndarray with the estimated rotation matrix.
+  :param t_est: 3x1 ndarray with the estimated translation vector.
+  :param R_gt: 3x3 ndarray with the ground-truth rotation matrix.
+  :param t_gt: 3x1 ndarray with the ground-truth translation vector.
+  :param K: 3x3 ndarray with the intrinsic camera matrix.
+  :param pts: nx3 ndarray with 3D model points.
+  :param syms: Set of symmetry transformations, each given by a dictionary with:
+    - 'R': 3x3 ndarray with the rotation matrix.
+    - 't': 3x1 ndarray with the translation vector.
+  :return: The calculated error.
+  """
+  proj_est = misc.project_pts(pts, K, R_est, t_est)
+  es = []
+  for sym in syms:
+    R_gt_sym = R_gt.dot(sym['R'])
+    t_gt_sym = R_gt.dot(sym['t']) + t_gt
+    proj_gt_sym = misc.project_pts(pts, K, R_gt_sym, t_gt_sym)
+    es.append(np.linalg.norm(proj_est - proj_gt_sym, axis=1).max())
+  return min(es)
 
 
 def add(R_est, t_est, R_gt, t_gt, pts):
@@ -155,7 +222,7 @@ def proj(R_est, t_est, R_gt, t_gt, K, pts):
   :param t_est: 3x1 ndarray with the estimated translation vector.
   :param R_gt: 3x3 ndarray with the ground-truth rotation matrix.
   :param t_gt: 3x1 ndarray with the ground-truth translation vector.
-  :param K: 3x3 ndarray with a camera matrix.
+  :param K: 3x3 ndarray with an intrinsic camera matrix.
   :param pts: nx3 ndarray with 3D model points.
   :return: The calculated error.
   """
@@ -193,7 +260,7 @@ def cus(R_est, t_est, R_gt, t_gt, K, renderer, obj_id):
   :param t_est: 3x1 ndarray with the estimated translation vector.
   :param R_gt: 3x3 ndarray with the ground-truth rotation matrix.
   :param t_gt: 3x1 ndarray with the ground-truth translation vector.
-  :param K: 3x3 ndarray with a camera matrix.
+  :param K: 3x3 ndarray with an intrinsic camera matrix.
   :param renderer: Instance of the Renderer class (see renderer.py).
   :param obj_id: Object identifier.
   :return: The calculated error.
@@ -237,7 +304,7 @@ def cou_bb_proj(R_est, t_est, R_gt, t_gt, K, renderer, obj_id):
   :param t_est: 3x1 ndarray with the estimated translation vector.
   :param R_gt: 3x3 ndarray with the ground-truth rotation matrix.
   :param t_gt: 3x1 ndarray with the ground-truth translation vector.
-  :param K: 3x3 ndarray with a camera matrix.
+  :param K: 3x3 ndarray with an intrinsic camera matrix.
   :param renderer: Instance of the Renderer class (see renderer.py).
   :param obj_id: Object identifier.
   :return: The calculated error.

@@ -6,6 +6,7 @@
 import os
 import time
 import argparse
+import copy
 import numpy as np
 
 from bop_toolkit_lib import config
@@ -25,12 +26,27 @@ p = {
   'n_top': 1,
 
   # Pose error function.
-  # Options: 'vsd', 'ad', 'adi', 'add', 'cus', 'rete', 're', 'te'.
-  'error_type': 'vsd',
+  # Options: 'vsd', 'mssd', 'mspd', 'ad', 'adi', 'add', 'cus', 're', 'te, etc.
+  'error_type': 'mspd',
 
   # VSD parameters.
-  'vsd_delta': 15,
-  'vsd_tau': 20,
+  'vsd_deltas': {
+    'hb': 15,
+    'icbin': 15,
+    'icmi': 15,
+    'itodd': 5,
+    'lm': 15,
+    'lmo': 15,
+    'ruapc': 15,
+    'tless': 15,
+    'tudl': 15,
+    'tyol': 15,
+  },
+  'vsd_taus': list(np.arange(0.05, 0.51, 0.05)),
+  'vsd_normalized_by_diameter': True,
+
+  # MSSD/MSPD parameters (see misc.get_symmetry_transformations).
+  'max_sym_disc_step': 0.01,
 
   # Whether to ignore/break if some errors are missing.
   'skip_missing': True,
@@ -51,23 +67,29 @@ p = {
 
   # File with a list of estimation targets to consider. The file is assumed to
   # be stored in the dataset folder.
-  'targets_filename': 'test_targets_bop19.yml',
+  'targets_filename': 'test_targets_bop19.json',
 
   # Template of path to the output file with calculated errors.
   'out_errors_tpath': os.path.join(
     config.eval_path, '{result_name}', '{error_sign}',
-    'errors_{scene_id:06d}.yml')
+    'errors_{scene_id:06d}.json')
 }
 ################################################################################
 
 
 # Command line arguments.
 # ------------------------------------------------------------------------------
+vsd_deltas_str =\
+  ','.join(['{}:{}'.format(k, v) for k, v in p['vsd_deltas'].items()])
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--n_top', default=p['n_top'])
 parser.add_argument('--error_type', default=p['error_type'])
-parser.add_argument('--vsd_delta', default=p['vsd_delta'])
-parser.add_argument('--vsd_tau', default=p['vsd_tau'])
+parser.add_argument('--vsd_deltas', default=vsd_deltas_str)
+parser.add_argument('--vsd_taus', default=','.join(map(str, p['vsd_taus'])))
+parser.add_argument('--vsd_normalized_by_diameter',
+                    default=p['vsd_normalized_by_diameter'])
+parser.add_argument('--max_sym_disc_step', default=p['max_sym_disc_step'])
 parser.add_argument('--skip_missing', default=p['skip_missing'])
 parser.add_argument('--renderer_type', default=p['renderer_type'])
 parser.add_argument('--result_filenames',
@@ -80,9 +102,12 @@ args = parser.parse_args()
 
 p['n_top'] = int(args.n_top)
 p['error_type'] = str(args.error_type)
-p['vsd_delta'] = float(args.vsd_delta)
-p['vsd_tau'] = float(args.vsd_tau)
-p['skip_missing'] = str(args.skip_missing)
+p['vsd_deltas'] = {str(e.split(':')[0]): float(e.split(':')[1])
+                   for e in args.vsd_deltas.split(',')}
+p['vsd_taus'] = map(float, args.vsd_taus.split(','))
+p['vsd_normalized_by_diameter'] = bool(args.vsd_normalized_by_diameter)
+p['max_sym_disc_step'] = bool(args.max_sym_disc_step)
+p['skip_missing'] = bool(args.skip_missing)
 p['renderer_type'] = str(args.renderer_type)
 p['result_filenames'] = args.result_filenames.split(',')
 p['datasets_path'] = str(args.datasets_path)
@@ -97,24 +122,20 @@ misc.log('-----------')
 
 # Error calculation.
 # ------------------------------------------------------------------------------
-# Error signature.
-error_sign = misc.get_error_signature(
-  p['error_type'], p['n_top'], vsd_delta=p['vsd_delta'], vsd_tau=p['vsd_tau'])
-
 for result_filename in p['result_filenames']:
   misc.log('Processing: {}'.format(result_filename))
 
   ests_counter = 0
   time_start = time.time()
 
-  # Parse info about the method and the dataset from the folder name.
+  # Parse info about the method and the dataset from the filename.
   result_name = os.path.splitext(os.path.basename(result_filename))[0]
   result_info = result_name.split('_')
-  method = result_info[0]
+  method = str(result_info[0])
   dataset_info = result_info[1].split('-')
-  dataset = dataset_info[0]
-  split = dataset_info[1]
-  split_type = dataset_info[2] if len(dataset_info) > 2 else None
+  dataset = str(dataset_info[0])
+  split = str(dataset_info[1])
+  split_type = str(dataset_info[2]) if len(dataset_info) > 2 else None
   split_type_str = ' - ' + split_type if split_type is not None else ''
 
   # Load dataset parameters.
@@ -127,7 +148,7 @@ for result_filename in p['result_filenames']:
 
   # Load object models.
   models = {}
-  if p['error_type'] in ['ad', 'add', 'adi']:
+  if p['error_type'] in ['ad', 'add', 'adi', 'mssd', 'mspd']:
     misc.log('Loading object models...')
     for obj_id in dp_model['obj_ids']:
       models[obj_id] = inout.load_ply(
@@ -135,8 +156,17 @@ for result_filename in p['result_filenames']:
 
   # Load models info.
   models_info = None
-  if p['error_type'] in ['ad', 'add', 'adi', 'vsd', 'cus']:
-    models_info = inout.load_yaml(dp_model['models_info_path'])
+  if p['error_type'] in ['ad', 'add', 'adi', 'vsd', 'mssd', 'mspd', 'cus']:
+    models_info = inout.load_json(
+      dp_model['models_info_path'], keys_to_int=True)
+
+  # Get sets of symmetry transformations for the object models.
+  models_sym = None
+  if p['error_type'] in ['mssd', 'mspd']:
+    models_sym = {}
+    for obj_id in dp_model['obj_ids']:
+      models_sym[obj_id] = misc.get_symmetry_transformations(
+        models_info[obj_id], p['max_sym_disc_step'])
 
   # Initialize a renderer.
   ren = None
@@ -149,7 +179,7 @@ for result_filename in p['result_filenames']:
       ren.add_object(obj_id, dp_model['model_tpath'].format(obj_id=obj_id))
 
   # Load the estimation targets.
-  targets = inout.load_yaml(
+  targets = inout.load_json(
     os.path.join(dp_split['base_path'], p['targets_filename']))
 
   # Organize the targets by scene, image and object.
@@ -189,7 +219,7 @@ for result_filename in p['result_filenames']:
           'im: {}'.format(
             p['error_type'], method, dataset, split_type_str, scene_id, im_ind))
 
-      # Camera matrix.
+      # Intrinsic camera matrix.
       K = scene_camera[im_id]['cam_K']
 
       # Load the depth image if VSD is selected as the pose error function.
@@ -262,17 +292,33 @@ for result_filename in p['result_filenames']:
             # Check if the bounding spheres of the object in the two poses
             # overlap (to speed up calculation of some errors).
             spheres_overlap = None
-            if p['error_type'] in ['ad', 'add', 'adi']:
+            if p['error_type'] in ['ad', 'add', 'adi', 'mssd']:
               center_dist = np.linalg.norm(t_e - t_g)
               spheres_overlap = center_dist < models_info[obj_id]['diameter']
 
             if p['error_type'] == 'vsd':
               if not sphere_projections_overlap:
-                e = [1.0]
+                e = [1.0] * len(p['vsd_taus'])
               else:
-                e = [pose_error.vsd(
-                  R_e, t_e, R_g, t_g, depth_im, K, p['vsd_delta'], p['vsd_tau'],
-                  ren, obj_id, 'step')]
+
+                e = pose_error.vsd(
+                  R_e, t_e, R_g, t_g, depth_im, K, p['vsd_deltas'][dataset],
+                  p['vsd_taus'], p['vsd_normalized_by_diameter'],
+                  models_info[obj_id]['diameter'], ren, obj_id, 'step')
+
+            elif p['error_type'] == 'mssd':
+              if not spheres_overlap:
+                e = [float('inf')]
+              else:
+                e = [pose_error.mssd(
+                  R_e, t_e, R_g, t_g, models[obj_id]['pts'],
+                  models_sym[obj_id])]
+
+            elif p['error_type'] == 'mspd':
+              e = [pose_error.mspd(
+                R_e, t_e, R_g, t_g, K, models[obj_id]['pts'],
+                models_sym[obj_id])]
+
             elif p['error_type'] in ['ad', 'add', 'adi']:
               if not spheres_overlap:
                 # Infinite error if the bounding spheres do not overlap. With
@@ -293,7 +339,7 @@ for result_filename in p['result_filenames']:
                   e = [pose_error.add(
                     R_e, t_e, R_g, t_g, models[obj_id]['pts'])]
 
-                elif p['error_type'] == 'adi':
+                else:  # 'adi'
                   e = [pose_error.adi(
                     R_e, t_e, R_g, t_g, models[obj_id]['pts'])]
 
@@ -327,12 +373,33 @@ for result_filename in p['result_filenames']:
             'errors': errs
           })
 
-    # Save the calculated errors to a YAML file.
-    errors_path = p['out_errors_tpath'].format(
-      result_name=result_name, error_sign=error_sign, scene_id=scene_id)
-    misc.ensure_dir(os.path.dirname(errors_path))
-    misc.log('Saving errors to: {}'.format(errors_path))
-    inout.save_errors(errors_path, scene_errs)
+    def save_errors(_error_sign, _scene_errs):
+      # Save the calculated errors to a JSON file.
+      errors_path = p['out_errors_tpath'].format(
+        result_name=result_name, error_sign=_error_sign, scene_id=scene_id)
+      misc.ensure_dir(os.path.dirname(errors_path))
+      misc.log('Saving errors to: {}'.format(errors_path))
+      inout.save_json(errors_path, _scene_errs)
+
+    # Save the calculated errors.
+    if p['error_type'] == 'vsd':
+
+      # For VSD, save errors for each tau value to a different file.
+      for vsd_tau_id, vsd_tau in enumerate(p['vsd_taus']):
+        error_sign = misc.get_error_signature(
+          p['error_type'], p['n_top'], vsd_delta=p['vsd_deltas'][dataset],
+          vsd_tau=vsd_tau)
+
+        # Keep only errors for the current tau.
+        scene_errs_curr = copy.deepcopy(scene_errs)
+        for err in scene_errs_curr:
+          for gt_id in err['errors'].keys():
+            err['errors'][gt_id] = [err['errors'][gt_id][vsd_tau_id]]
+
+        save_errors(error_sign, scene_errs_curr)
+    else:
+      error_sign = misc.get_error_signature(p['error_type'], p['n_top'])
+      save_errors(error_sign, scene_errs)
 
   time_total = time.time() - time_start
   misc.log('Calculation of errors for {} estimates took {}s.'.format(
