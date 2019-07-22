@@ -106,28 +106,28 @@ for result_filename in p['result_filenames']:
   for error in p['errors']:
 
     # Calculate error of the pose estimates.
-    # calc_errors_cmd = [
-    #   'python',
-    #   os.path.join('scripts', 'eval_calc_errors.py'),
-    #   '--n_top={}'.format(error['n_top']),
-    #   '--error_type={}'.format(error['type']),
-    #   '--result_filenames={}'.format(result_filename),
-    #   '--renderer_type={}'.format(p['renderer_type']),
-    #   '--targets_filename={}'.format(p['targets_filename']),
-    #   '--max_sym_disc_step={}'.format(p['max_sym_disc_step']),
-    #   '--skip_missing=1',
-    # ]
-    # if error['type'] == 'vsd':
-    #   vsd_deltas_str = \
-    #     ','.join(['{}:{}'.format(k, v) for k, v in error['vsd_deltas'].items()])
-    #   calc_errors_cmd += [
-    #     '--vsd_deltas={}'.format(vsd_deltas_str),
-    #     '--vsd_taus={}'.format(','.join(map(str, error['vsd_taus'])))
-    #   ]
+    calc_errors_cmd = [
+      'python',
+      os.path.join('scripts', 'eval_calc_errors.py'),
+      '--n_top={}'.format(error['n_top']),
+      '--error_type={}'.format(error['type']),
+      '--result_filenames={}'.format(result_filename),
+      '--renderer_type={}'.format(p['renderer_type']),
+      '--targets_filename={}'.format(p['targets_filename']),
+      '--max_sym_disc_step={}'.format(p['max_sym_disc_step']),
+      '--skip_missing=1',
+    ]
+    if error['type'] == 'vsd':
+      vsd_deltas_str = \
+        ','.join(['{}:{}'.format(k, v) for k, v in error['vsd_deltas'].items()])
+      calc_errors_cmd += [
+        '--vsd_deltas={}'.format(vsd_deltas_str),
+        '--vsd_taus={}'.format(','.join(map(str, error['vsd_taus'])))
+      ]
 
-    # misc.log('Running: ' + ' '.join(calc_errors_cmd))
-    # if subprocess.call(calc_errors_cmd) != 0:
-    #   raise RuntimeError('Calculation of VSD failed.')
+    misc.log('Running: ' + ' '.join(calc_errors_cmd))
+    if subprocess.call(calc_errors_cmd) != 0:
+      raise RuntimeError('Calculation of VSD failed.')
 
     # Name of the result and the dataset.
     result_name = os.path.splitext(os.path.basename(result_filename))[0]
@@ -155,20 +155,20 @@ for result_filename in p['result_filenames']:
     for error_sign, error_dir_path in error_dir_paths.items():
       for correct_th in error['correct_th']:
 
-        # calc_scores_cmd = [
-        #   'python',
-        #   os.path.join('scripts', 'eval_calc_scores.py'),
-        #   '--error_dir_paths={}'.format(error_dir_path),
-        #   '--targets_filename={}'.format(p['targets_filename']),
-        #   '--visib_gt_min={}'.format(p['visib_gt_min'])
-        # ]
+        calc_scores_cmd = [
+          'python',
+          os.path.join('scripts', 'eval_calc_scores.py'),
+          '--error_dir_paths={}'.format(error_dir_path),
+          '--targets_filename={}'.format(p['targets_filename']),
+          '--visib_gt_min={}'.format(p['visib_gt_min'])
+        ]
 
-        # calc_scores_cmd += ['--correct_th_{}={}'.format(
-        #   error['type'], ','.join(map(str, correct_th)))]
+        calc_scores_cmd += ['--correct_th_{}={}'.format(
+          error['type'], ','.join(map(str, correct_th)))]
 
-        # misc.log('Running: ' + ' '.join(calc_scores_cmd))
-        # if subprocess.call(calc_scores_cmd) != 0:
-        #   raise RuntimeError('Calculation of scores failed.')
+        misc.log('Running: ' + ' '.join(calc_scores_cmd))
+        if subprocess.call(calc_scores_cmd) != 0:
+          raise RuntimeError('Calculation of scores failed.')
 
         # Path to file with calculated scores.
         score_sign = misc.get_score_signature(correct_th, p['visib_gt_min'])
