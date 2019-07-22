@@ -301,10 +301,6 @@ for result_filename in p['result_filenames']:
               if not sphere_projections_overlap:
                 e = [1.0] * len(p['vsd_taus'])
               else:
-<<<<<<< HEAD
-
-=======
->>>>>>> upstream/master
                 e = pose_error.vsd(
                   R_e, t_e, R_g, t_g, depth_im, K, p['vsd_deltas'][dataset],
                   p['vsd_taus'], p['vsd_normalized_by_diameter'],
