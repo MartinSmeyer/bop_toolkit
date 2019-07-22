@@ -3,6 +3,10 @@
 
 """Configuration of the BOP Toolkit."""
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> upstream/master
 # Folder with the BOP datasets.
 datasets_path = r'/path/to/bop/datasets'
 
@@ -20,4 +24,7 @@ bop_renderer_path = r'/path/to/bop_renderer/build'
 
 # Executable of the MeshLab server.
 meshlab_server_path = r'/path/to/meshlabserver.exe'
+<<<<<<< HEAD
 
+=======
+>>>>>>> upstream/master
