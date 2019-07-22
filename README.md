@@ -1,10 +1,6 @@
 # BOP Toolkit
 
-<<<<<<< HEAD
-A Python toolkit for the BOP benchmark for 6D object pose estimation
-=======
 A Python toolkit of the BOP benchmark for 6D object pose estimation
->>>>>>> upstream/master
 (http://bop.felk.cvut.cz).
 
 - **bop_toolkit_lib** - The core Python library for i/o operations, calculation
