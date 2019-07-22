@@ -245,7 +245,15 @@ def get_split_params(datasets_path, dataset_name, split, split_type=None):
 
   # MVTec ITODD.
   elif dataset_name == 'itodd':
+<<<<<<< HEAD
     p['scene_ids'] = {'val': [1], 'test': [1]}[split]
+=======
+    p['scene_ids'] = {
+      'train': [],
+      'val': [1],
+      'test': [1]
+    }[split]
+>>>>>>> upstream/master
     p['im_size'] = (1280, 960)
 
     gray_ext = '.tif'
@@ -260,6 +268,7 @@ def get_split_params(datasets_path, dataset_name, split, split_type=None):
   # HomebrewedDB (HB).
   elif dataset_name == 'hb':
     p['scene_ids'] = {
+      'train': [],
       'val': [3, 5, 13],
       'test': [3, 5, 13],
     }[split]

@@ -20,4 +20,3 @@ bop_renderer_path =r'/net/rmc-lx0314/home_local/sund_ma/src/foreign_packages/bop
 
 # Executable of the MeshLab server.
 meshlab_server_path = r'/path/to/meshlabserver.exe'
-
