@@ -69,7 +69,7 @@ p = {
   # File with a list of estimation targets to consider. The file is assumed to
   # be stored in the dataset folder.
   # 'targets_filename': 'test_targets_bop19.json',
-  'targets_filename': '/home_local/sund_ma/src/foreign_packages/bop/datasets/bop/lm/test_targets_bop19.yml',
+  'targets_filename': '/home_local/sund_ma/src/foreign_packages/bop/datasets/bop/lm/test_targets_bop19.json',
 
 
 }
