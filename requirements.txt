@@ -7,5 +7,5 @@ Cython==0.29.10
 PyOpenGL==3.1.0
 triangle==20190115.2
 glumpy==1.1.0
-opencv-python==4.1.0.25
+opencv-python==4.2.0.32
 Pillow==6.0.0
